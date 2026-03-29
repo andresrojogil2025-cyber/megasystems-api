@@ -78,8 +78,8 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Megasystems API en ejecución.' });
 });
 
-// Fallback: cualquier ruta no-API sirve el index.html (SPA-like)
-app.get('(.*)', (req, res) => {
+// Fallback: cualquier ruta no capturada antes (como rutas de la SPA) sirve el index.html
+app.use((req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
