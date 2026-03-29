@@ -181,12 +181,17 @@
 
         @media (max-width: 768px) {
             .sidebar {
-                position: absolute;
-                left: -260px; /* Ocultar sidebar en móviles por ahora */
-                z-index: 50;
+                position: fixed; /* Cambiado a fixed para cubrir la pantalla */
+                left: -260px;
+                z-index: 100;
                 height: 100%;
+                box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+            }
+            .sidebar.active {
+                left: 0;
             }
             .header { padding: 15px; }
+            #menuToggle { display: flex !important; align-items: center; justify-content: center; width: 40px; height: 40px; }
             .bcv-rate { font-size: 0.85rem; padding: 6px 12px; }
             .dashboard-banner { margin: 15px; height: 120px; }
             .page-content { padding: 15px; }
@@ -219,7 +224,7 @@
     <main class="main-content">
         
         <header class="header">
-            <!-- Menú Hamburger Móvil (Funcionalidad pendiente) -->
+            <!-- Menú Hamburger Móvil -->
             <button class="btn-logout" id="menuToggle" style="color: var(--color-text-main); display: none;"><i class="ph ph-list"></i></button>
             
             <div class="bcv-rate" id="bcvRateBox" title="Tasa extraída del BCV">

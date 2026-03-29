@@ -1,0 +1,4 @@
+ https://supabase.com/dashboard/projects
+
+
+Allí verás tu proyecto. Entra en "Table Editor" (el icono de la tablita a la izquierda) y podrás ver, editar o borrar filas de tus tablas (Usuarios, Clientes, Facturas) como si fuera un Excel gigante y potente. ⚡

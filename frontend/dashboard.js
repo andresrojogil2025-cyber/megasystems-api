@@ -56,4 +56,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.clear();
         window.location.href = 'index.html';
     });
+
+    // 5. Menú Móvil (Abrir/Cerrar Sidebar)
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.querySelector('.main-content');
+
+    if (menuToggle && sidebar) {
+        menuToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle('active');
+        });
+
+        // Cerrar al tocar fuera (en el contenido principal)
+        mainContent.addEventListener('click', () => {
+            if (sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+            }
+        });
+    }
 });

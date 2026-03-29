@@ -51,6 +51,7 @@ app.delete('/api/catalogo/:id', catalogoController.delete);
 
 app.get('/api/usuarios', usuariosController.getAll);
 app.post('/api/usuarios', usuariosController.create);
+app.put('/api/usuarios/:id', usuariosController.update);
 app.delete('/api/usuarios/:id', usuariosController.delete);
 
 // Rutas de Cotizaciones y Facturación

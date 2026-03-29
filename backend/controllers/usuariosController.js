@@ -42,16 +42,46 @@ const usuariosController = {
         }
     },
 
+    // Actualizar usuario
+    update: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { username, nombre, rol, password } = req.body;
+
+            if (!username || !nombre || !rol) {
+                return res.status(400).json({ error: 'Nombre, Usuario y Rol son obligatorios.' });
+            }
+
+            if (password && password.trim() !== "") {
+                const hashed = hashPassword(password);
+                await db.runAsync(
+                    'UPDATE usuarios SET username = ?, nombre = ?, rol = ?, password_hash = ? WHERE id = ?',
+                    [username.toLowerCase(), nombre, rol, hashed, id]
+                );
+            } else {
+                await db.runAsync(
+                    'UPDATE usuarios SET username = ?, nombre = ?, rol = ? WHERE id = ?',
+                    [username.toLowerCase(), nombre, rol, id]
+                );
+            }
+
+            res.json({ success: true, message: 'Usuario actualizado correctamente.' });
+        } catch (error) {
+            if (error.code === '23505') {
+                return res.status(400).json({ error: 'El nombre de usuario ya está en uso.' });
+            }
+            console.error(error);
+            res.status(500).json({ error: 'Error actualizando el usuario.' });
+        }
+    },
+
     // Eliminar usuario
     delete: async (req, res) => {
         try {
             const { id } = req.params;
-            
-            // Protección básica: Evitar que borren al Admin Principal (id = 1) si lo desean
             if(parseInt(id) === 1) {
-                return res.status(400).json({ error: 'No se puede eliminar la cuenta de administrador principal del sistema.' });
+                return res.status(400).json({ error: 'No se puede eliminar la cuenta de administrador principal.' });
             }
-
             await db.runAsync('DELETE FROM usuarios WHERE id = ?', [id]);
             res.json({ success: true, message: 'Usuario eliminado del sistema.' });
         } catch (error) {
