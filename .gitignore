@@ -1,0 +1,19 @@
+# Dependencias (se instalan automáticamente con npm install)
+node_modules/
+
+# Variables de entorno (contienen contraseñas - NUNCA subir)
+.env
+
+# Base de datos local SQLite (ya migramos a Supabase)
+database/megasystems.sqlite
+
+# Archivos temporales
+*.log
+.DS_Store
+Thumbs.db
+
+# Archivos de test
+backend/test_*.js
+backend/test_*.json
+backend/check_*.js
+backend/check_*.txt

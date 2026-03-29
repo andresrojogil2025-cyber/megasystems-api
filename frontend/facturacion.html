@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Megasystems - Facturación</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .page-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;
+        }
+        .page-header h2 { color: var(--color-text-main); }
+        .btn-back { display: flex; align-items: center; gap: 8px; color: var(--color-primary); text-decoration: none; font-weight: 500; }
+        .btn-back:hover { text-decoration: underline; }
+
+        .invoice-container { display: grid; grid-template-columns: 1fr 350px; gap: 25px; align-items: start; }
+        .panel { background: var(--color-surface); padding: 25px; border-radius: var(--border-radius-lg); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .panel h3 { margin-bottom: 15px; color: var(--color-text-main); font-size: 1.1rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px;}
+
+        /* Buscadores */
+        .search-box { position: relative; margin-bottom: 15px; }
+        .search-box input { width: 100%; padding: 10px 15px 10px 40px; border: 1px solid #d1d5db; border-radius: var(--border-radius-sm); outline: none;}
+        .search-box input:focus { border-color: var(--color-primary); }
+        .search-box i { position: absolute; left: 12px; top: 12px; color: var(--color-text-muted); }
+        
+        .autocomplete-results { position: absolute; top:100%; left:0; right:0; background: white; border:1px solid #d1d5db; z-index:10; border-radius:4px; max-height:200px; overflow-y:auto; box-shadow:0 4px 10px rgba(0,0,0,0.1); display:none;}
+        .autocomplete-results div { padding:10px; cursor:pointer; border-bottom:1px solid #f3f4f6; }
+        .autocomplete-results div:hover { background-color:#f0fdf4; }
+
+        /* Tabla de Facturación */
+        .items-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .items-table th { background: var(--color-bg-light); padding: 12px; text-align: left; font-weight: 600; color: var(--color-text-muted); font-size: 0.9rem; }
+        .items-table td { padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
+        .items-table input.qty { width: 60px; padding: 5px; border: 1px solid #d1d5db; border-radius: 4px; text-align: center; }
+        .items-table .btn-delete { color: #ef4444; background: none; border: none; cursor: pointer; font-size: 1.2rem; }
+
+        /* Totales Panel Lateral */
+        .totals-box { background: var(--color-bg-light); padding: 20px; border-radius: var(--border-radius-sm); margin-bottom: 20px; }
+        .totals-row { display: flex; justify-content: space-between; margin-bottom: 10px; color: var(--color-text-muted); }
+        .totals-row.grand-total { border-top: 1px solid #d1d5db; padding-top: 15px; margin-top: 10px; font-weight: 700; color: var(--color-text-main); font-size: 1.25rem; }
+        .currency-label { font-size: 0.8rem; background: var(--color-primary); color: white; padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
+        .currency-label.ves { background: var(--color-secondary); }
+
+        .btn-full { width: 100%; padding: 15px; border-radius: var(--border-radius-sm); font-size: 1rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s;}
+        .btn-invoice { background: var(--color-primary); color: white; margin-bottom: 10px;}
+        .btn-invoice:hover { background: var(--color-primary-hover); }
+        .btn-quote { background: white; color: var(--color-text-main); border: 1px solid #d1d5db; }
+        .btn-quote:hover { background: #f9fafb; }
+
+        @media (max-width: 992px) {
+            .invoice-container { grid-template-columns: 1fr; }
+            .items-table { display: block; overflow-x: auto; white-space: nowrap; }
+        }
+    </style>
+</head>
+<body style="background: var(--color-bg-light); padding: 30px;">
+
+    <div class="page-header">
+        <a href="dashboard.html" class="btn-back"><i class="ph ph-arrow-left"></i> Volver al Dashboard</a>
+        <h2>Facturación Bimonetaria</h2>
+    </div>
+
+    <!-- Tasa Viva desde el LocalStorage (Guardada en Dashboard) -->
+    <div style="background: var(--color-surface); padding: 10px 20px; border-radius: 8px; margin-bottom: 20px; display: inline-block; font-weight: 600; color: var(--color-secondary); border: 1px solid rgba(16, 185, 129, 0.3);">
+        Tasa Oficial (BCV) del día: <span id="displayBcvRate">Calculando...</span> VES/USD
+    </div>
+
+    <div class="invoice-container">
+        <!-- Panel Izquierdo: Selección -->
+        <div class="left-panel" style="display: flex; flex-direction: column; gap: 20px;">
+            <!-- Buscador de Cotizaciones -->
+            <div class="panel" style="border: 2px solid var(--color-primary); background: #eff6ff;">
+                <h3 style="color: var(--color-primary); border-color: var(--color-primary);"><i class="ph ph-file-search"></i> Recuperar Cotización</h3>
+                <div class="search-box">
+                    <i class="ph ph-hash"></i>
+                    <input type="text" id="searchQuote" placeholder="Buscar por Nro o Nombre de Cliente..." autocomplete="off">
+                    <div id="quotesDropdown" class="autocomplete-results"></div>
+                </div>
+                <p style="font-size: 0.8rem; color: #1e40af; margin-top: -5px;">Carga una cotización guardada para convertirla en factura fiscal.</p>
+            </div>
+
+            <!-- Fecha de Emisión -->
+            <div class="panel" style="display: flex; gap: 15px; align-items: center; justify-content: space-between;">
+                <h3 style="margin-bottom: 0; border: none; padding: 0;"><i class="ph ph-calendar"></i> Fecha de Emisión</h3>
+                <input type="date" id="invoiceDate" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; outline: none; font-family: inherit;">
+            </div>
+
+            <!-- Cliente -->
+            <div class="panel">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>1. Seleccionar Cliente</h3>
+                    <a href="#" onclick="document.getElementById('modalNuevoCliente').style.display='flex'; return false;" style="font-size:0.85rem; color:var(--color-primary);">+ Nuevo Cliente</a>
+                </div>
+                
+                <div class="search-box">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" id="searchClient" placeholder="Buscar cliente por Nombre o RIF..." autocomplete="off">
+                    <div id="clientsDropdown" class="autocomplete-results"></div>
+                </div>
+                
+                <div id="selectedClientBox" style="display: none; background: #f0fdf4; padding: 15px; border-radius: 6px; border: 1px solid #bbf7d0; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong id="labelClientName" style="color:#166534;">EMPRESA EJEMPLO C.A.</strong> <br>
+                        <small style="color:#15803d;">RIF: <span id="labelClientRif">J-30000000-1</span></small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Catálogo -->
+            <div class="panel">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>2. Agregar Servicios o Productos</h3>
+                    <a href="catalogo.html" target="_blank" style="font-size:0.85rem; color:var(--color-primary);">+ Nuevo Ítem</a>
+                </div>
+                <div class="search-box">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" id="searchCatalog" placeholder="Buscar productos y servicios..." autocomplete="off">
+                    <div id="catalogDropdown" class="autocomplete-results"></div>
+                </div>
+                
+                <table class="items-table" id="itemsTable">
+                    <thead>
+                        <tr>
+                            <th>Descripción</th>
+                            <th>P. Unitario (USD/VES)</th>
+                            <th>Cant.</th>
+                            <th>Total (USD/VES)</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoiceItemsBody">
+                        <tr><td colspan="5" style="text-align:center; color:gray;">No ha agregado ningún ítem.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Totales -->
+        <div class="panel right-panel">
+            <h3>3. Liquidación y Totales</h3>
+            
+            <div class="totals-box">
+                <h4 style="margin-bottom: 10px; color: var(--color-text-main); font-size: 0.95rem;">Montos en Dólares</h4>
+                <div class="totals-row">
+                    <span>Subtotal:</span>
+                    <span><span class="currency-label">USD</span> $<span id="totSubUsd">0.00</span></span>
+                </div>
+                <div class="totals-row">
+                    <span>I.V.A (16%):</span>
+                    <span><span class="currency-label">USD</span> $<span id="totIvaUsd">0.00</span></span>
+                </div>
+                <div class="totals-row grand-total">
+                    <span>Total USD:</span>
+                    <span>$<span id="totGrandUsd">0.00</span></span>
+                </div>
+            </div>
+
+            <div class="totals-box" style="background: #ecfdf5; border: 1px solid #a7f3d0;">
+                <h4 style="margin-bottom: 10px; color: var(--color-secondary); font-size: 0.95rem;">Equivalente Oficial BCV</h4>
+                <div class="totals-row" style="color: #065f46;">
+                    <span>Subtotal:</span>
+                    <span><span class="currency-label ves">VES</span> Bs. <span id="totSubVes">0.00</span></span>
+                </div>
+                <div class="totals-row" style="color: #065f46;">
+                    <span>I.V.A (16%):</span>
+                    <span><span class="currency-label ves">VES</span> Bs. <span id="totIvaVes">0.00</span></span>
+                </div>
+                <div class="totals-row grand-total" style="color: #047857; border-color: #6ee7b7;">
+                    <span>Total VES a Pagar:</span>
+                    <span>Bs. <span id="totGrandVes">0.00</span></span>
+                </div>
+            </div>
+
+            <button class="btn-full btn-invoice" id="btnProcesarFactura"><i class="ph ph-receipt"></i> Generar Factura Fiscal</button>
+            <button class="btn-full btn-quote" id="btnProcesarCotizacion"><i class="ph ph-file-text"></i> Guardar como Cotización</button>
+        </div>
+    </div>
+
+    <!-- Modal Nuevo Cliente -->
+    <div id="modalNuevoCliente" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; justify-content:center; align-items:center;">
+        <div style="background:var(--color-surface); padding:25px; border-radius:var(--border-radius-lg); width:450px; max-width:90%; position:relative; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+            <h3 style="margin-bottom:15px; color:var(--color-text-main); border-bottom:1px solid #e5e7eb; padding-bottom:10px;">Registrar Cliente Rápido</h3>
+            <form id="formNuevoCliente">
+                <input type="hidden" id="nuevoClienteTipo" value="cliente">
+                <div style="display:grid; grid-template-columns: 1fr; gap: 15px;">
+                    <div style="position:relative;">
+                        <input type="text" id="nuevoClienteNombre" placeholder="*Razón Social o Nombre" required style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:4px; outline:none;">
+                    </div>
+                    <div style="position:relative;">
+                        <input type="text" id="nuevoClienteRif" placeholder="*RIF o Cédula (Ej: J-XXXXXXXX-X)" required style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:4px; outline:none;">
+                    </div>
+                    <div style="position:relative;">
+                        <input type="text" id="nuevoClienteTlf" placeholder="Teléfono (Opcional)" style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:4px; outline:none;">
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                    <button type="button" onclick="document.getElementById('modalNuevoCliente').style.display='none'" style="padding:10px 15px; border:1px solid #d1d5db; background:white; border-radius:4px; cursor:pointer;">Cancelar</button>
+                    <button type="submit" style="padding:10px 15px; border:none; background:var(--color-primary); color:white; border-radius:4px; font-weight:600; cursor:pointer;">Guardar y Seleccionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="facturacion.js"></script>
+</body>
+</html>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Megasystems - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+    <!-- Estilos específicos para el Dashboard -->
+    <style>
+        .dashboard-layout {
+            display: flex;
+            height: 100vh;
+            background-color: var(--color-bg-light);
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--color-surface);
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            transition: all var(--transition-speed);
+        }
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: center;
+        }
+        .sidebar-header img {
+            max-width: 150px;
+        }
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            padding: 20px 10px;
+            gap: 5px;
+        }
+        .nav-item {
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--color-text-main);
+            text-decoration: none;
+            border-radius: var(--border-radius-sm);
+            font-weight: 500;
+            transition: all var(--transition-speed);
+        }
+        .nav-item:hover, .nav-item.active {
+            background-color: rgba(59, 130, 246, 0.1); /* Azul muy claro */
+            color: var(--color-primary);
+        }
+        .nav-item i { font-size: 1.25rem; }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* Header / Cabecera */
+        .header {
+            background: var(--color-surface);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        /* Tasa BCV Header */
+        .bcv-rate {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: rgba(16, 185, 129, 0.15); /* Verde pastel */
+            color: var(--color-secondary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 5px rgba(16, 185, 129, 0.1);
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-weight: 500;
+        }
+        .btn-logout {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        /* Banner Promocional Dinámico */
+        .dashboard-banner {
+            margin: 25px 30px 0;
+            height: 140px;
+            border-radius: var(--border-radius-lg);
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            padding: 30px;
+            color: white;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .dashboard-banner::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 100%);
+            border-radius: var(--border-radius-lg);
+        }
+        .banner-content {
+            position: relative;
+            z-index: 1;
+        }
+        .banner-content h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        /* Content Area */
+        .page-content {
+            padding: 30px;
+        }
+
+        /* Tarjetas de Módulo */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .module-card {
+            background: var(--color-surface);
+            padding: 25px;
+            border-radius: var(--border-radius-lg);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+        .module-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(59, 130, 246, 0.1);
+            border-color: var(--color-primary);
+        }
+        .module-icon {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--color-primary);
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+        }
+        
+        .module-desc h3 { color: var(--color-text-main); margin-bottom: 5px;}
+        .module-desc p { color: var(--color-text-muted); font-size: 0.9rem;}
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                left: -260px; /* Ocultar sidebar en móviles por ahora */
+                z-index: 50;
+                height: 100%;
+            }
+            .header { padding: 15px; }
+            .bcv-rate { font-size: 0.85rem; padding: 6px 12px; }
+            .dashboard-banner { margin: 15px; height: 120px; }
+            .page-content { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-layout">
+    
+    <!-- Barra Lateral -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <img src="images/default/megasystems_logo.png" alt="Megasystems" id="dashLogo">
+        </div>
+        <nav class="nav-menu">
+            <a href="dashboard.html" class="nav-item active"><i class="ph ph-squares-four"></i> Dashboard</a>
+            <a href="facturacion.html" class="nav-item"><i class="ph ph-receipt"></i> Facturación</a>
+            <a href="clientes.html" class="nav-item"><i class="ph ph-users"></i> Clientes</a>
+            <a href="catalogo.html" class="nav-item"><i class="ph ph-hard-drives"></i> Catálogo</a>
+            <a href="usuarios.html" class="nav-item"><i class="ph ph-shield-check"></i> Accesos (Usuarios)</a>
+            <a href="retenciones.html" class="nav-item"><i class="ph ph-hand-coins"></i> Retenciones</a>
+            <a href="cuentas_por_cobrar.html" class="nav-item"><i class="ph ph-money"></i> Cuentas por Cobrar</a>
+            <a href="#" class="nav-item"><i class="ph ph-books"></i> Libros SENIAT</a>
+            <a href="configuracion.html" class="nav-item"><i class="ph ph-gear"></i> Configuración</a>
+        </nav>
+    </aside>
+
+    <!-- Contenido Principal -->
+    <main class="main-content">
+        
+        <header class="header">
+            <!-- Menú Hamburger Móvil (Funcionalidad pendiente) -->
+            <button class="btn-logout" id="menuToggle" style="color: var(--color-text-main); display: none;"><i class="ph ph-list"></i></button>
+            
+            <div class="bcv-rate" id="bcvRateBox" title="Tasa extraída del BCV">
+                <i class="ph ph-currency-dollar"></i> BCV: Cargando... VES
+            </div>
+            
+            <div class="user-menu">
+                <span id="userNameDisplay">Cargando...</span>
+                <button class="btn-logout" id="btnLogout" title="Cerrar Sesión"><i class="ph ph-sign-out"></i></button>
+            </div>
+        </header>
+
+        <!-- Banner Dinámico -->
+        <div class="dashboard-banner" id="dashBanner" style="background-image: url('images/default/banner_cctv_redes.jpg');">
+            <div class="banner-content">
+                <h1 id="welcomeMessage">Bienvenido a Megasystems</h1>
+                <p>Sistema Central de Gestión y Control Fiscal</p>
+            </div>
+        </div>
+
+        <!-- Módulos de Acción Rápida -->
+        <div class="page-content">
+            <h2 style="color: var(--color-text-main); margin-bottom: 20px;">Accesos Rápidos</h2>
+            
+            <div class="module-grid">
+                <div class="module-card" onclick="window.location.href='facturacion.html'">
+                    <div class="module-icon"><i class="ph ph-receipt"></i></div>
+                    <div class="module-desc">
+                        <h3>Nueva Factura</h3>
+                        <p>Emitir factura fiscal o recibo interno</p>
+                    </div>
+                </div>
+
+                <div class="module-card">
+                    <div class="module-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--color-secondary);"><i class="ph ph-file-text"></i></div>
+                    <div class="module-desc">
+                        <h3>Cotizaciones</h3>
+                        <p>Generar presupuestos tecnológicos</p>
+                    </div>
+                </div>
+
+                <div class="module-card">
+                    <div class="module-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i class="ph ph-books"></i></div>
+                    <div class="module-desc">
+                        <h3>Libro de Ventas</h3>
+                        <p>Reporte mensual formato SENIAT</p>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="window.location.href='retenciones.html'">
+                    <div class="module-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;"><i class="ph ph-hand-coins"></i></div>
+                    <div class="module-desc">
+                        <h3>Retenciones</h3>
+                        <p>Registrar comprobantes de IVA/ISLR</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+</div>
+
+<script src="dashboard.js"></script>
+
+</body>
+</html>

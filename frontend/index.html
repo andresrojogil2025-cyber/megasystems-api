@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Megasystems - Autenticación</title>
+    <!-- Fuente moderna e intuitiva (Google Fonts) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Iconos Phosphor (para UI limpia y moderna) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-body">
+    <!-- El fondo dinámico se aplicará por JS a este div -->
+    <div class="dynamic-background" id="loginBackground"></div>
+    
+    <div class="login-container">
+        <!-- Logo dinámico -->
+        <div class="brand">
+            <img src="https://via.placeholder.com/200x60?text=MEGASYSTEMS+LOGO" alt="Logo Empresa" id="loginLogo">
+        </div>
+        
+        <h2>Control de Facturación</h2>
+        <p class="subtitle">Ingrese sus credenciales para acceder</p>
+        
+        <form id="loginForm" class="login-form">
+            <div class="input-group">
+                <i class="ph ph-user"></i>
+                <select id="username" required>
+                    <option value="" disabled selected>Seleccione su Usuario...</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <i class="ph ph-lock-key"></i>
+                <input type="password" id="password" placeholder="Contraseña" required>
+            </div>
+            
+            <button type="submit" class="btn-primary">Iniciar Sesión <i class="ph ph-arrow-right"></i></button>
+        </form>
+
+        <div class="footer-links">
+            <a href="#">Soporte Técnico Especializado</a>
+        </div>
+    </div>
+
+    <!-- Script base para simular funcionamiento -->
+    <script src="app.js"></script>
+</body>
+</html>

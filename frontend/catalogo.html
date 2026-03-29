@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Megasystems - Catálogo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .page-header h2 { color: var(--color-text-main); }
+        .btn-back { display: flex; align-items: center; gap: 8px; color: var(--color-primary); text-decoration: none; font-weight: 500; }
+        
+        .layout-grid { display: grid; grid-template-columns: 350px 1fr; gap: 25px; align-items: start; }
+        .panel { background: var(--color-surface); padding: 25px; border-radius: var(--border-radius-lg); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .panel h3 { margin-bottom: 20px; color: var(--color-text-main); border-bottom: 1px solid #e5e7eb; padding-bottom: 10px;}
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: var(--color-text-main); font-weight: 500; font-size: 0.9rem;}
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: var(--border-radius-sm); font-family: 'Inter'; outline: none; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--color-primary); }
+        
+        /* Tabla */
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { background: var(--color-bg-light); padding: 12px; text-align: left; color: var(--color-text-muted); font-size: 0.9rem; }
+        .data-table td { padding: 12px; border-bottom: 1px solid #e5e7eb;font-size: 0.95rem; }
+        
+        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+        .badge.producto { background: #fee2e2; color: #991b1b; } /* Rojo claro */
+        .badge.servicio { background: #e0e7ff; color: #3730a3; } /* Indigo claro */
+        
+        .price-tag { font-weight: 700; color: var(--color-secondary); }
+        .stock-tag { font-family: monospace; font-size: 0.9rem; background: #f3f4f6; padding: 2px 6px; border-radius: 4px;}
+
+        .btn-danger { color: #ef4444; background: none; border: none; cursor: pointer; font-size: 1.2rem; }
+
+        @media (max-width: 992px) {
+            .layout-grid { grid-template-columns: 1fr; }
+            .table-responsive { overflow-x: auto; }
+        }
+    </style>
+</head>
+<body style="background: var(--color-bg-light); padding: 30px;">
+    
+    <div class="page-header">
+        <a href="dashboard.html" class="btn-back"><i class="ph ph-arrow-left"></i> Volver al Dashboard</a>
+        <h2>Inventario y Servicios</h2>
+    </div>
+
+    <!-- Banner Info -->
+    <div style="background: #e0f2fe; color: #0369a1; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: 500; border: 1px solid #bae6fd;">
+        <i class="ph ph-info"></i> Todo precio debe registrarse obligatoriamente en <strong>Dólares Estadounidenses (USD)</strong>.
+    </div>
+
+    <div class="layout-grid">
+        <!-- Formulario -->
+        <div class="panel">
+            <h3>Nuevo Ítem</h3>
+            <form id="catalogForm">
+                <div class="form-group">
+                    <label>Tipo de Ítem</label>
+                    <select id="tipo" required onchange="toggleStockField()">
+                        <option value="producto">Producto (Tangible)</option>
+                        <option value="servicio">Servicio (Intangible)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nombre del Ítem</label>
+                    <input type="text" id="nombre" required placeholder="Disco Duro, Mantenimiento...">
+                </div>
+                <div class="form-group">
+                    <label>Descripción / Detalles</label>
+                    <textarea id="descripcion" rows="3" placeholder="Especificaciones o detalles del servicio..."></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Precio Base (USD) $</label>
+                        <input type="number" step="0.01" id="precio_usd" required placeholder="0.00">
+                    </div>
+                    <div class="form-group" id="stockGroup" style="flex: 1;">
+                        <label>Stock Inicial</label>
+                        <input type="number" id="stock" placeholder="Cant.">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" style="margin-top: 10px;">Agregar al Catálogo</button>
+            </form>
+        </div>
+
+        <!-- Lista Catálogo -->
+        <div class="panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; border: none; padding: 0;">Catálogo Activo</h3>
+                <input type="text" id="searchInput" placeholder="Buscar producto o servicio" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; width: 250px;">
+            </div>
+            
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Precio (USD)</th>
+                            <th>Stock</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="catalogBody">
+                        <tr><td colspan="5" style="text-align:center;">Cargando catálogo...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="catalogo.js"></script>
+    <script>
+        // Ocultar campo Stock si es servicio
+        function toggleStockField() {
+            const tipo = document.getElementById('tipo').value;
+            const stockGroup = document.getElementById('stockGroup');
+            const stockInput = document.getElementById('stock');
+            if(tipo === 'servicio') {
+                stockGroup.style.display = 'none';
+                stockInput.value = '';
+                stockInput.removeAttribute('required');
+            } else {
+                stockGroup.style.display = 'block';
+                stockInput.setAttribute('required', 'true');
+            }
+        }
+        toggleStockField(); // run on init
+    </script>
+</body>
+</html>

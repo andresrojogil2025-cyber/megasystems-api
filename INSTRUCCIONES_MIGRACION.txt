@@ -1,0 +1,37 @@
+============================================================
+       GUÍA DE INSTALACIÓN EN NUEVA COMPUTADORA
+============================================================
+
+Para que el sistema Megasystems funcione correctamente en esta
+computadora, debes seguir estos 2 pasos esenciales:
+
+1. INSTALAR NODE.JS (Mínimo versión 20 - x64)
+------------------------------------------
+- Descarga Node.js desde: https://nodejs.org/
+- **IMPORTANTE:** Asegúrate de descargar la versión de **64 bits (x64)**.
+- La versión de 32 bits (ia32) dará errores al usar la base de datos.
+- Selecciona la versión que dice "LTS" (actualmente es la 20.x o 22.x).
+- Al terminar, CIERRA la ventana negra que tienes abierta y abre una NUEVA.
+
+2. ARRANCAR EL SISTEMA
+------------------------------------------
+- Una vez instalado Node.js, simplemente haz doble clic en el archivo:
+  "iniciar_sistema.bat" que está en esta carpeta.
+- Se abrirá una ventana negra (el servidor) y luego se abrirá tu 
+  navegador con el sistema. 
+- ¡NO CIERRES la ventana negra mientras uses el sistema!
+
+------------------------------------------------------------
+SOLUCIÓN A PROBLEMAS COMUNES:
+------------------------------------------------------------
+Si al abrir el sistema ves un error de "Conexión fallida" o 
+"No conecta la base de datos", haz lo siguiente:
+
+1. Entra en la carpeta "backend"
+2. En la barra de direcciones de arriba (donde dice la ruta), 
+   borra todo, escribe "cmd" y presiona Enter.
+3. Se abrirá una ventana negra. Escribe exactamente esto:
+   npm install
+4. Presiona Enter y espera a que termine (necesitas internet).
+5. Intenta abrir "iniciar_sistema.bat" de nuevo.
+============================================================
