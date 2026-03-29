@@ -79,7 +79,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Fallback: cualquier ruta no-API sirve el index.html (SPA-like)
-app.get('*', (req, res) => {
+app.get('(.*)', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
