@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Nota de Entrega - Megasystems</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #0f172a;
+            --accent: #2563eb;
+            --text-main: #334155;
+            --text-light: #64748b;
+            --bg-light: #f8fafc;
+            --border-color: #cbd5e1;
+        }
+
+        @media print {
+            body { background: white !important; margin: 0; padding: 0; }
+            .no-print { display: none !important; }
+            .print-container { box-shadow: none !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; border: none !important; }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e2e8f0;
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .print-container {
+            background: white;
+            width: 800px;
+            max-width: 100%;
+            padding: 50px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo-container { width: 150px; height: auto; }
+        .logo-container img { width: 100%; height: auto; border-radius: 8px; }
+
+        .company-info { text-align: right; }
+        .company-name { font-size: 1.5rem; font-weight: 800; color: var(--secondary); margin: 0; letter-spacing: -0.5px; }
+        .company-subtitle { font-size: 0.9rem; color: var(--accent); font-weight: 600; margin-top: 2px; margin-bottom: 8px; }
+        .company-contact { font-size: 0.85rem; color: var(--text-light); line-height: 1.4; }
+
+        .doc-title-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; }
+        .doc-title { font-size: 2rem; font-weight: 800; color: var(--primary); margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+
+        .doc-meta { text-align: right; font-size: 0.95rem; background: var(--bg-light); padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); }
+        .doc-meta strong { color: var(--secondary); }
+
+        .client-section { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 40px; }
+        .client-box { background-color: var(--bg-light); border: 1px solid var(--border-color); border-radius: 6px; padding: 15px 20px; }
+        .client-box h3 { margin-top: 0; margin-bottom: 10px; font-size: 0.9rem; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+        .client-details p { margin: 5px 0; font-size: 0.95rem; }
+        .client-details strong { color: var(--secondary); }
+
+        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .items-table th { background-color: var(--primary); color: white; padding: 12px; text-align: left; font-size: 0.9rem; font-weight: 600; border: 1px solid var(--primary); }
+        .items-table th.text-right { text-align: right; }
+        .items-table th.text-center { text-align: center; }
+        .items-table td { padding: 12px; border-bottom: 1px solid var(--border-color); border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 0.95rem; vertical-align: middle; }
+        .items-table td.text-right { text-align: right; }
+        .items-table td.text-center { text-align: center; }
+        .item-desc { font-weight: 600; color: var(--secondary); }
+
+        .totals-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; gap: 20px; }
+
+        .terms-box { width: 50%; font-size: 0.9rem; color: var(--text-light); background: #fffbeb; border: 1px solid #fde68a; padding: 15px; border-radius: 6px; }
+        .terms-box h4 { margin: 0 0 5px 0; color: #b45309; }
+
+        .totals-box { width: 45%; background-color: var(--bg-light); border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; }
+        .totals-row { display: flex; justify-content: space-between; padding: 10px 15px; border-bottom: 1px solid var(--border-color); font-size: 0.95rem; }
+        .totals-row:last-child { border-bottom: none; }
+        .totals-row strong { color: var(--secondary); }
+
+        .grand-total-row { background-color: var(--primary); color: white; font-size: 1.15rem; font-weight: 700; }
+        .grand-total-row strong { color: white; }
+
+        .signatures-section { display: flex; justify-content: space-between; margin-top: 60px; }
+        .signature-box { width: 45%; text-align: center; }
+        .signature-line { border-top: 1px solid var(--text-main); margin-bottom: 8px; padding-top: 8px; }
+        .signature-label { font-size: 0.85rem; color: var(--text-light); }
+
+        .action-buttons { text-align: center; margin-bottom: 20px; }
+        .btn { background: var(--accent); color: white; border: none; padding: 12px 24px; font-size: 1rem; font-weight: 600; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2); transition: background 0.2s; }
+        .btn:hover { background: #1d4ed8; }
+
+        .btn-back { background: var(--bg-light); color: var(--secondary); border: 1px solid var(--border-color); padding: 12px 24px; font-size: 1rem; font-weight: 600; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; margin-right: 15px; }
+        .btn-back:hover { background: #e2e8f0; }
+    </style>
+</head>
+<body>
+
+    <div class="print-container">
+
+        <div class="action-buttons no-print">
+            <a href="notas_entrega.html" class="btn-back">⬅️ Volver a Notas de Entrega</a>
+            <button class="btn" onclick="window.print()">🖨️ Imprimir / PDF</button>
+        </div>
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="logo-container">
+                <img src="images/logo_jarg.jpeg" alt="Logo Empresa" onerror="this.src='images/default/megasystems_logo.png'">
+            </div>
+
+            <div class="company-info">
+                <h1 class="company-name">JOSÉ ANDRÉS ROJO GIL</h1>
+                <div class="company-subtitle">SERVICIOS TECNOLÓGICOS</div>
+                <div class="company-contact">
+                    Sistemas y Desarrollo de Software<br>
+                    <strong>Teléfono:</strong> 0426-5771525<br>
+                    <strong>Correo:</strong> joserojo2000@gmail.com
+                </div>
+            </div>
+        </div>
+
+        <!-- DOC INFO -->
+        <div class="doc-title-row">
+            <h2 class="doc-title">Nota de Entrega</h2>
+
+            <div class="doc-meta">
+                <div style="margin-bottom: 5px;"><strong>Nro:</strong> <span id="lblNro">Cargando...</span></div>
+                <div><strong>Fecha:</strong> <span id="lblFecha">--/--/----</span></div>
+            </div>
+        </div>
+
+        <!-- CLIENT INFO -->
+        <div class="client-section">
+            <div class="client-box">
+                <h3>Datos del Cliente</h3>
+                <div class="client-details">
+                    <p><strong>Razón Social:</strong> <span id="lblClientName">...</span></p>
+                    <p><strong>RIF / C.I:</strong> <span id="lblClientRif">...</span></p>
+                    <p><strong>Teléfono:</strong> <span id="lblClientTlf">...</span></p>
+                    <p><strong>Dirección:</strong> <span id="lblClientDir">...</span></p>
+                </div>
+            </div>
+
+            <div class="client-box" style="background:#f1f5f9;">
+                <h3>Información Tasa</h3>
+                <div class="client-details" style="text-align:center; padding-top:10px;">
+                    <p style="font-size: 0.85rem; color:var(--text-light); margin-bottom:5px;">Tasa de cambio aplicada BCV</p>
+                    <p style="font-size: 1.5rem; font-weight:800; color:#0f172a; margin:0;">
+                        Bs. <span id="lblTasa">0.00</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITEMS -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th width="45%">Descripción</th>
+                    <th width="10%" class="text-center">Cant.</th>
+                    <th width="20%" class="text-right">Precio Unit.<br><span style="font-size:0.7rem; font-weight:400;">(USD / VES)</span></th>
+                    <th width="25%" class="text-right">Total<br><span style="font-size:0.7rem; font-weight:400;">(USD / VES)</span></th>
+                </tr>
+            </thead>
+            <tbody id="itemsBody">
+                <!-- Items se llenan por JS -->
+            </tbody>
+        </table>
+
+        <!-- TOTALS & CONDITIONS -->
+        <div class="totals-section">
+            <div class="terms-box">
+                <h4>Observaciones</h4>
+                <p style="margin:0;" id="lblObservaciones">Ninguna.</p>
+            </div>
+
+            <div class="totals-box">
+                <div class="totals-row">
+                    <span>Subtotal:</span>
+                    <div style="text-align: right;">
+                        <strong>$<span id="subUsd">0.00</span></strong><br>
+                        <span style="font-size:0.8rem; color:var(--text-light);">Bs. <span id="subVes">0.00</span></span>
+                    </div>
+                </div>
+                <div class="totals-row" id="rowDescuento" style="display:none;">
+                    <span>Descuento:</span>
+                    <div style="text-align: right;">
+                        <strong>-$<span id="descUsd">0.00</span></strong><br>
+                        <span style="font-size:0.8rem; color:var(--text-light);">-Bs. <span id="descVes">0.00</span></span>
+                    </div>
+                </div>
+                <div class="totals-row grand-total-row">
+                    <span>TOTAL DÓLARES:</span>
+                    <div style="text-align: right;">
+                        <strong>$<span id="totUsd">0.00</span></strong>
+                    </div>
+                </div>
+                <div class="totals-row" style="background:#dcfce7; border-top:none;">
+                    <span style="color:#166534; font-weight:700;">TOTAL BOLÍVARES:</span>
+                    <div style="text-align: right;">
+                        <strong style="color:#166534; font-size:1.15rem;">Bs. <span id="totVes">0.00</span></strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p style="font-size: 0.8rem; color: var(--text-light); text-align:center; margin-bottom: 40px;">
+            Este documento certifica la entrega física de los bienes/servicios descritos. No constituye una factura fiscal.
+        </p>
+
+        <!-- FIRMAS -->
+        <div class="signatures-section no-print-avoid">
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-label">Entregado por</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-label">Recibido conforme (Cliente)</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        const formatVez = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+
+        async function loadNota() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+
+            if (!id) {
+                alert("ID de nota de entrega no proporcionado.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/notas-entrega/${id}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    const n = data.data;
+                    const c = n.cliente;
+
+                    document.getElementById('lblNro').innerText = n.nro_nota_entrega;
+                    document.getElementById('lblFecha').innerText = new Date(n.fecha).toLocaleDateString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+                    document.getElementById('lblClientName').innerText = c.nombre_razon;
+                    document.getElementById('lblClientRif').innerText = c.rif;
+                    document.getElementById('lblClientTlf').innerText = c.telefono || 'N/A';
+                    document.getElementById('lblClientDir').innerText = c.direccion || 'No especificada';
+
+                    document.getElementById('lblObservaciones').innerText = n.observaciones || 'Ninguna.';
+
+                    let tasaBcv = parseFloat(n.tasa_bcv);
+                    if (!tasaBcv || tasaBcv <= 0) {
+                        tasaBcv = parseFloat(window.localStorage.getItem('rate')) || 0;
+                    }
+                    document.getElementById('lblTasa').innerText = formatVez(tasaBcv);
+
+                    const tbody = document.getElementById('itemsBody');
+                    let html = '';
+
+                    n.items.forEach(it => {
+                        const puUsd = parseFloat(it.precio_unitario_usd);
+                        const qty = parseInt(it.cantidad);
+                        const totUsd = puUsd * qty;
+
+                        // Usar los montos VES guardados en el momento de la entrega (no recalcular con la tasa actual)
+                        const puVes = it.precio_unitario_ves != null ? parseFloat(it.precio_unitario_ves) : puUsd * tasaBcv;
+                        const totVes = it.total_ves != null ? parseFloat(it.total_ves) : totUsd * tasaBcv;
+
+                        html += `
+                            <tr>
+                                <td><div class="item-desc">${it.item_nombre}</div></td>
+                                <td class="text-center">${qty}</td>
+                                <td class="text-right">
+                                    $${formatVez(puUsd)}<br>
+                                    <span style="font-size:0.8rem; color:var(--text-light);">Bs.${formatVez(puVes)}</span>
+                                </td>
+                                <td class="text-right" style="font-weight:600;">
+                                    $${formatVez(totUsd)}<br>
+                                    <span style="font-size:0.8rem; color:var(--text-light);">Bs.${formatVez(totVes)}</span>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    tbody.innerHTML = html;
+
+                    // Usar los montos guardados en el momento de la entrega (no recalcular con la tasa actual)
+                    const subUsdVal = parseFloat(n.subtotal_usd);
+                    const totUsdVal = parseFloat(n.total_usd);
+                    const descUsdVal = parseFloat(n.descuento_usd) || 0;
+                    const subVesVal = n.subtotal_ves != null ? parseFloat(n.subtotal_ves) : subUsdVal * tasaBcv;
+                    const totVesVal = n.total_ves != null ? parseFloat(n.total_ves) : totUsdVal * tasaBcv;
+                    const descVesVal = n.descuento_ves != null ? parseFloat(n.descuento_ves) : descUsdVal * tasaBcv;
+
+                    document.getElementById('subUsd').innerText = formatVez(subUsdVal);
+                    document.getElementById('subVes').innerText = formatVez(subVesVal);
+                    document.getElementById('totUsd').innerText = formatVez(totUsdVal);
+                    document.getElementById('totVes').innerText = formatVez(totVesVal);
+
+                    if (descUsdVal > 0) {
+                        document.getElementById('rowDescuento').style.display = 'flex';
+                        document.getElementById('descUsd').innerText = formatVez(descUsdVal);
+                        document.getElementById('descVes').innerText = formatVez(descVesVal);
+                    }
+
+                } else {
+                    alert("Error cargando la nota de entrega");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Fallo de comunicación con el servidor");
+            }
+        }
+
+        window.onload = loadNota;
+    </script>
+</body>
+</html>

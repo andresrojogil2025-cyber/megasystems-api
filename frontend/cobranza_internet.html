@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Megasystems - Cobranza Internet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .dashboard-layout {
+            display: flex;
+            height: 100vh;
+            background-color: #f8fafc;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 260px;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s;
+        }
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        .sidebar-header img {
+            max-width: 150px;
+        }
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            padding: 20px 10px;
+            gap: 5px;
+        }
+        .nav-item {
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #475569;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .nav-item:hover, .nav-item.active {
+            background-color: #f1f5f9;
+            color: #0ea5e9;
+        }
+        .nav-item i { font-size: 1.25rem; }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .header {
+            background: #ffffff;
+            padding: 20px 30px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h2 { margin: 0; color: #0f172a; }
+        
+        .btn-sync {
+            background-color: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(14, 165, 233, 0.2);
+        }
+        .btn-sync:hover { background-color: #0284c7; transform: translateY(-2px); }
+        .btn-sync i { font-size: 1.2rem; }
+
+        .page-content { padding: 30px; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .stat-card:hover { 
+            border-color: #0ea5e9; 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
+        }
+        .stat-icon {
+            width: 50px; height: 50px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .table-panel {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+        
+        .toolbar { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .search-input {
+            padding: 10px 15px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            width: 300px;
+            outline: none;
+            font-family: inherit;
+        }
+        .search-input:focus { border-color: #0ea5e9; }
+
+        /* Tabla */
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { background: #f8fafc; padding: 12px 15px; text-align: left; color: #64748b; font-size: 0.9rem; border-bottom: 2px solid #e2e8f0; }
+        .data-table td { padding: 15px; border-bottom: 1px solid #e2e8f0; font-size: 0.95rem; color: #1e293b; vertical-align: middle; }
+        
+        .status-badge {
+            padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;
+        }
+        .status-badge.activo { background: #dcfce7; color: #166534; }
+        .status-badge.suspendido { background: #fee2e2; color: #991b1b; }
+
+        .btn-action { padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .btn-suspend { background: #fee2e2; color: #dc2626; }
+        .btn-suspend:hover { background: #fca5a5; }
+        .btn-pay { background: #d1fae5; color: #059669; }
+        .btn-pay:hover { background: #a7f3d0; }
+        .btn-delete { background: #f1f5f9; color: #64748b; padding: 8px; border-radius: 6px; border: none; cursor: pointer; transition: 0.2s; }
+        .btn-delete:hover { background: #e2e8f0; color: #ef4444; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            display: none; align-items: center; justify-content: center;
+            z-index: 1000; opacity: 0; transition: opacity 0.3s;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        
+        .modal {
+            background: white; border-radius: 16px; padding: 30px; width: 450px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            transform: translateY(20px); transition: transform 0.3s;
+        }
+        .modal-overlay.active .modal { transform: translateY(0); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h3 { margin: 0; color: #0f172a; font-size: 1.2rem; }
+        .btn-close { background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #475569; font-weight: 500; font-size: 0.9rem; }
+        .form-control { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 0.95rem; box-sizing: border-box; }
+        .form-control:focus { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1); }
+        
+        .btn-submit { background: #0ea5e9; color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 10px; }
+        .btn-submit:hover { background: #0284c7; }
+
+        #loadingOverlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.8);
+            z-index: 2000; display: none; align-items: center; justify-content: center;
+            flex-direction: column; gap: 10px; font-weight: 600; color: #0ea5e9;
+        }
+    </style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+    <i class="ph ph-spinner-gap ph-spin" style="font-size: 3rem;"></i>
+    <span id="loadingText">Sincronizando con MikroTik...</span>
+</div>
+
+<div class="dashboard-layout">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <img src="images/default/megasystems_logo.png" alt="Megasystems">
+        </div>
+        <nav class="nav-menu">
+            <a href="dashboard.html" class="nav-item"><i class="ph ph-squares-four"></i> Dashboard</a>
+            <a href="facturacion.html" class="nav-item"><i class="ph ph-receipt"></i> Facturación</a>
+            <a href="clientes.html" class="nav-item"><i class="ph ph-users"></i> Clientes</a>
+            <a href="catalogo.html" class="nav-item"><i class="ph ph-hard-drives"></i> Catálogo</a>
+            <a href="usuarios.html" class="nav-item"><i class="ph ph-shield-check"></i> Accesos (Usuarios)</a>
+            <a href="retenciones.html" class="nav-item"><i class="ph ph-hand-coins"></i> Retenciones</a>
+            <a href="cuentas_por_cobrar.html" class="nav-item"><i class="ph ph-money"></i> Cuentas por Cobrar</a>
+            <a href="cobranza_internet.html" class="nav-item active"><i class="ph ph-wifi-high"></i> Cobranza Internet</a>
+            <a href="mensajeria.html" class="nav-item"><i class="ph ph-whatsapp-logo"></i> Mensajería WhatsApp</a>
+            <a href="configuracion.html" class="nav-item"><i class="ph ph-gear"></i> Configuración</a>
+        </nav>
+    </aside>
+
+    <!-- Main -->
+    <div class="main-content">
+        <header class="header">
+            <div>
+                <h2>Cobranza de Internet ISP</h2>
+            </div>
+            <button class="btn-sync" onclick="sincronizarMikrotik()">
+                <i class="ph ph-arrows-clockwise"></i> Sincronizar Clientes de MikroTik
+            </button>
+        </header>
+
+        <div class="page-content">
+            
+            <div class="stats-grid">
+                <div class="stat-card" onclick="setFiltroEstado('todos')">
+                    <div class="stat-icon" style="background: #e0f2fe; color: #0284c7;"><i class="ph ph-users-three"></i></div>
+                    <div>
+                        <div style="color: #64748b; font-size: 0.9rem; font-weight: 500;">Total Clientes</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a;" id="statTotal">0</div>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="setFiltroEstado('activo')">
+                    <div class="stat-icon" style="background: #dcfce7; color: #16a34a;"><i class="ph ph-check-circle"></i></div>
+                    <div>
+                        <div style="color: #64748b; font-size: 0.9rem; font-weight: 500;">Conectados (Activos)</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a;" id="statActivos">0</div>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="setFiltroEstado('suspendido')">
+                    <div class="stat-icon" style="background: #fee2e2; color: #dc2626;"><i class="ph ph-warning-circle"></i></div>
+                    <div>
+                        <div style="color: #64748b; font-size: 0.9rem; font-weight: 500;">Suspendidos (Morosos)</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a;" id="statMorosos">0</div>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="setFiltroEstado('prorroga')">
+                    <div class="stat-icon" style="background: #ede9fe; color: #8b5cf6;"><i class="ph ph-calendar-plus"></i></div>
+                    <div>
+                        <div style="color: #64748b; font-size: 0.9rem; font-weight: 500;">Con Prórroga</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #0f172a;" id="statProrroga">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-panel">
+                <div class="toolbar">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre, IP o plan..." onkeyup="filtrarTabla()">
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Plan MKT / Velocidad</th>
+                            <th>IP / MAC (CPE)</th>
+                            <th>Estado</th>
+                            <th>Acciones en Router</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientesBody">
+                        <tr><td colspan="5" style="text-align: center; color: #64748b;">Cargando registros...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal Registrar Pago -->
+<div class="modal-overlay" id="pagoModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Registrar Pago y Reactivar</h3>
+            <button class="btn-close" onclick="cerrarModal()"><i class="ph ph-x"></i></button>
+        </div>
+        <form id="pagoForm" onsubmit="procesarReactivacion(event)">
+            <input type="hidden" id="modalClienteId">
+            <input type="hidden" id="modalClienteIp">
+            
+            <div style="background: #f1f5f9; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: 600;">
+                Cliente: <span id="modalClienteNombre" style="color: #0ea5e9;"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Plan Pagado</label>
+                <select id="pagoPlanDropdown" class="form-control" onchange="autoCompletarMonto()" required>
+                    <option value="" disabled selected>Seleccione un plan</option>
+                    <option value="10">Plan Básico ($10)</option>
+                    <option value="20">Plan Avanzado ($20)</option>
+                    <option value="otro">Otro Monto Manual</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Monto a Registrar (USD)</label>
+                <input type="number" step="0.01" id="pagoMonto" class="form-control" required placeholder="10.00" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Mes o Concepto (Puede escribir texto libre)</label>
+                <input type="text" id="pagoMes" class="form-control" placeholder="Ej: Marzo a Julio (4.5 meses)" required>
+            </div>
+
+            <div class="form-group">
+                <label>Método de Pago</label>
+                <select id="pagoMetodo" class="form-control" required>
+                    <option value="Transferencia BS">Transferencia BS</option>
+                    <option value="Pago Móvil">Pago Móvil</option>
+                    <option value="Efectivo USD">Efectivo USD</option>
+                    <option value="Zelle">Zelle</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Referencia</label>
+                <input type="text" id="pagoReferencia" class="form-control" placeholder="# de Operación">
+            </div>
+
+            <button type="submit" class="btn-submit"><i class="ph ph-check-circle"></i> Confirmar y Reactivar Internet</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Estado de Cuenta -->
+<div class="modal-overlay" id="estadoCuentaModal">
+    <div class="modal" style="width: 600px;">
+        <div class="modal-header">
+            <h3>Estado de Cuenta</h3>
+            <button class="btn-close" onclick="cerrarEstadoCuenta()"><i class="ph ph-x"></i></button>
+        </div>
+        <input type="hidden" id="modalEcClienteId">
+        
+        <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Cliente</div>
+                <div id="modalEcClienteNombre" style="color: #0ea5e9; font-weight: 700; font-size: 1.1rem;"></div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Total Adeudado</div>
+                <div id="modalEcTotal" style="color: #ef4444; font-weight: 800; font-size: 1.3rem;">$0.00</div>
+            </div>
+        </div>
+
+        <!-- Formulario para agregar deuda manual -->
+        <form id="formAgregarDeuda" style="display: flex; gap: 10px; margin-bottom: 20px;" onsubmit="agregarDeuda(event)">
+            <input type="text" id="deudaConcepto" class="form-control" placeholder="Concepto (Ej. Febrero 2026)" required style="flex: 2;">
+            <input type="number" step="0.01" id="deudaMonto" class="form-control" placeholder="Monto (Ej. 20.00)" required style="flex: 1;">
+            <button type="submit" class="btn-action btn-pay" style="white-space: nowrap;"><i class="ph ph-plus"></i> Añadir Deuda</button>
+        </form>
+
+        <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <table class="data-table" style="font-size: 0.85rem;">
+                <thead style="position: sticky; top: 0; background: #f8fafc;">
+                    <tr>
+                        <th style="padding: 8px;">Fecha</th>
+                        <th style="padding: 8px;">Concepto</th>
+                        <th style="padding: 8px;">Monto Total</th>
+                        <th style="padding: 8px;">Pagado</th>
+                        <th style="padding: 8px;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="deudasBody">
+                    <tr><td colspan="5" style="text-align:center;">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Configuración de Cliente -->
+<div class="modal-overlay" id="configClienteModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Configuración del Cliente</h3>
+            <button class="btn-close" onclick="cerrarConfigCliente()"><i class="ph ph-x"></i></button>
+        </div>
+        <form id="formConfigCliente" onsubmit="guardarConfigCliente(event)">
+            <input type="hidden" id="confClienteId">
+            
+            <div style="font-size: 0.85rem; font-weight: 600; color: #0ea5e9; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">Información del Cliente</div>
+
+            <div class="form-group">
+                <label>Nombre Completo / Identificación</label>
+                <input type="text" id="confNombre" class="form-control" placeholder="Ej: Juan Pérez o Empresa C.A.">
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>Celular (Opcional)</label>
+                    <input type="text" id="confCelular" class="form-control" placeholder="Ej: 0414-0000000">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Fecha de Nacimiento</label>
+                    <input type="date" id="confFechaNacimiento" class="form-control">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div class="form-group" style="flex: 2;">
+                    <label>Sector / Ubicación</label>
+                    <select id="confSector" class="form-control">
+                        <option value="">Cargando sectores...</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Día Cobro</label>
+                    <input type="number" id="confDiaCobranza" class="form-control" min="1" max="31" placeholder="Día" required>
+                </div>
+            </div>
+
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <input type="checkbox" id="confAutoSuspension" style="width: 18px; height: 18px;">
+                <label for="confAutoSuspension" style="margin: 0; cursor: pointer;">Habilitar Suspensión Automática</label>
+            </div>
+            <p style="font-size: 0.8rem; color: #64748b; margin-top: -10px; margin-bottom: 20px; margin-left: 28px;">Desmarca la casilla si hiciste un convenio de pago y no quieres que el sistema le corte internet el día de vencimiento.</p>
+
+            <button type="submit" class="btn-submit"><i class="ph ph-floppy-disk"></i> Guardar Cambios</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Promesa de Pago (Prórroga) -->
+<div class="modal-overlay" id="promesaModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Registrar Promesa de Pago (Prórroga)</h3>
+            <button class="btn-close" onclick="cerrarPromesaModal()"><i class="ph ph-x"></i></button>
+        </div>
+        <form id="formPromesa" onsubmit="procesarPromesa(event)">
+            <input type="hidden" id="promesaClienteId">
+            <input type="hidden" id="promesaClienteIp">
+            
+            <div style="font-size: 0.85rem; font-weight: 600; color: #0ea5e9; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">Cliente a Reactivar temporalmente</div>
+            <div style="background: #f1f5f9; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: 600; color: #0f172a;" id="promesaClienteNombre"></div>
+
+            <div class="form-group">
+                <label>Seleccionar Fecha Límite de Promesa</label>
+                <input type="date" id="promesaFechaLimite" class="form-control" required>
+            </div>
+            
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 20px;">
+                <i class="ph ph-info"></i> El servicio se reactivará de inmediato. El cliente volverá automáticamente a la lista de morosos el día establecido a las 00:01 AM.
+            </p>
+
+            <button type="submit" class="btn-submit" style="background:#8b5cf6;"><i class="ph ph-calendar-plus"></i> Reactivar y Guardar Prórroga</button>
+        </form>
+    </div>
+</div>
+
+<script src="cobranza_internet.js"></script>
+
+</body>
+</html>

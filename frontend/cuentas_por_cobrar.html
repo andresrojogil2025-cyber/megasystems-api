@@ -140,6 +140,46 @@
         </div>
     </div>
 
+    <!-- Modal para Editar Deuda -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Deuda</h3>
+                <button class="btn-close" onclick="closeEditModal()">&times;</button>
+            </div>
+
+            <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:15px; margin-bottom:20px;">
+                <h4 style="margin:0 0 10px 0; font-size:0.85rem; color:#0369a1; text-transform:uppercase; letter-spacing:0.05em;">Vista Previa Actual</h4>
+                <p style="margin:4px 0; font-size:0.9rem;"><strong>Cliente:</strong> <span id="editPreviewCliente">-</span></p>
+                <p style="margin:4px 0; font-size:0.9rem;"><strong>Concepto:</strong> <span id="editPreviewConcepto">-</span></p>
+                <p style="margin:4px 0; font-size:0.9rem;"><strong>Monto:</strong> $<span id="editPreviewMonto">0.00</span></p>
+                <p style="margin:4px 0; font-size:0.9rem;"><strong>Fecha:</strong> <span id="editPreviewFecha">-</span></p>
+            </div>
+
+            <form id="editForm">
+                <div class="form-group">
+                    <label>Monto de la Deuda (USD)</label>
+                    <input type="number" step="0.01" id="editMontoTotal" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Fecha de Crédito</label>
+                    <input type="date" id="editFechaCredito" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Concepto / Notas</label>
+                    <textarea id="editNotas" rows="3"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn-primary" style="background: #6b7280;" onclick="closeEditModal()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal para Registrar Abono -->
     <div id="paymentModal" class="modal">
         <div class="modal-content">
@@ -155,10 +195,15 @@
 
             <div class="exchange-rate-box">
                 <i class="ph ph-info"></i>
-                Tasa BCV del día: <strong id="currentBcvRate">0.00</strong> VES/USD
+                Tasa BCV aplicada: <strong id="currentBcvRate">0.00</strong> VES/USD
             </div>
 
             <form id="paymentForm">
+                <div class="form-group">
+                    <label>Fecha en que se recibió el pago</label>
+                    <input type="date" id="payDate" required>
+                </div>
+
                 <div class="form-group">
                     <label>Monto a Abonar (USD)</label>
                     <input type="number" step="0.01" id="payAmountUsd" placeholder="0.00" required>

@@ -54,11 +54,46 @@ const cuentasController = {
         }
     },
 
+    // Editar una deuda existente (concepto, monto, fecha)
+    update: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { monto_total_usd, fecha_credito, notas } = req.body;
+
+            if (!monto_total_usd || monto_total_usd <= 0) {
+                return res.status(400).json({ error: 'El monto debe ser mayor a cero' });
+            }
+
+            const cuenta = await db.queryAsync("SELECT * FROM cuentas_por_cobrar WHERE id = ?", [id]);
+            if (cuenta.length === 0) return res.status(404).json({ error: 'Cuenta no encontrada' });
+
+            // Recalcular el saldo pendiente en base a lo que ya se ha abonado hasta ahora
+            const yaAbonado = cuenta[0].monto_total_usd - cuenta[0].monto_pendiente_usd;
+
+            if (monto_total_usd < yaAbonado) {
+                return res.status(400).json({ error: `El nuevo monto no puede ser menor a lo ya abonado ($${yaAbonado.toFixed(2)})` });
+            }
+
+            const nuevo_pendiente = Math.max(0, monto_total_usd - yaAbonado);
+            const nuevo_estado = nuevo_pendiente <= 0 ? 'pagado' : 'pendiente';
+
+            await db.runAsync(
+                `UPDATE cuentas_por_cobrar SET monto_total_usd = ?, monto_pendiente_usd = ?, fecha_credito = ?, notas = ?, estado = ? WHERE id = ?`,
+                [monto_total_usd, nuevo_pendiente, fecha_credito || cuenta[0].fecha_credito, notas, nuevo_estado, id]
+            );
+
+            res.json({ success: true, message: 'Deuda actualizada con éxito', nuevo_pendiente });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Error al actualizar la deuda' });
+        }
+    },
+
     // Registrar un abono
     createAbono: async (req, res) => {
         try {
             const { id } = req.params; // ID de la cuenta por cobrar
-            const { monto_pagado_usd, monto_pagado_ves, tasa_bcv, metodo_pago, notas } = req.body;
+            const { monto_pagado_usd, monto_pagado_ves, tasa_bcv, metodo_pago, notas, fecha_pago } = req.body;
 
             if (!monto_pagado_usd || !tasa_bcv) {
                 return res.status(400).json({ error: 'Monto en USD y Tasa BCV son obligatorios' });
@@ -72,11 +107,11 @@ const cuentasController = {
             const nuevo_pendiente = Math.max(0, monto_pendiente_anterior - monto_pagado_usd);
             const nuevo_estado = nuevo_pendiente <= 0 ? 'pagado' : 'pendiente';
 
-            // 2. Insertar el abono
-            await db.runAsync(
-                `INSERT INTO abonos (cuenta_id, monto_pagado_usd, monto_pagado_ves, tasa_bcv, metodo_pago, notas) 
-                 VALUES (?, ?, ?, ?, ?, ?)`,
-                [id, monto_pagado_usd, monto_pagado_ves, tasa_bcv, metodo_pago, notas]
+            // 2. Insertar el abono (con snapshot del saldo antes/después para poder reimprimir el recibo)
+            const infoAbono = await db.runAsync(
+                `INSERT INTO abonos (cuenta_id, fecha_pago, monto_pagado_usd, monto_pagado_ves, tasa_bcv, metodo_pago, notas, saldo_anterior_usd, saldo_posterior_usd)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [id, fecha_pago || new Date().toISOString(), monto_pagado_usd, monto_pagado_ves, tasa_bcv, metodo_pago, notas, monto_pendiente_anterior, nuevo_pendiente]
             );
 
             // 3. Actualizar la cuenta por cobrar
@@ -85,10 +120,11 @@ const cuentasController = {
                 [nuevo_pendiente, nuevo_estado, id]
             );
 
-            res.json({ 
-                success: true, 
+            res.json({
+                success: true,
                 message: nuevo_estado === 'pagado' ? 'Deuda cancelada totalmente' : 'Abono registrado con éxito',
-                nuevo_pendiente
+                nuevo_pendiente,
+                abono_id: infoAbono.lastID
             });
 
         } catch (error) {
@@ -106,6 +142,28 @@ const cuentasController = {
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: 'Error al obtener historial de abonos' });
+        }
+    },
+
+    // Obtener detalle de un abono específico (para el comprobante/recibo impreso)
+    getAbonoDetail: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const rows = await db.queryAsync(`
+                SELECT a.*, c.monto_total_usd, c.cliente_id,
+                       e.nombre_razon, e.rif, e.telefono, e.direccion
+                FROM abonos a
+                JOIN cuentas_por_cobrar c ON a.cuenta_id = c.id
+                JOIN entidades e ON c.cliente_id = e.id
+                WHERE a.id = ?
+            `, [id]);
+
+            if (rows.length === 0) return res.status(404).json({ error: 'Abono no encontrado' });
+
+            res.json({ success: true, data: rows[0] });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Error al obtener el detalle del abono' });
         }
     }
 };

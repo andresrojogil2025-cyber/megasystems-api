@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mensajería WhatsApp - Megasystems</title>
+    <!-- Mismas fuentes y librerias -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #25D366; /* WhatsApp Green */
+            --primary-hover: #128C7E;
+            --white: #ffffff;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        /* Layout Base (Copiado de cobranza_internet para uniformidad) */
+        .dashboard-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px; background: var(--white); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+        }
+        .sidebar-header {
+            padding: 24px 20px; border-bottom: 1px solid var(--border); text-align: center;
+        }
+        .sidebar-header img { max-width: 150px; }
+        .nav-menu { display: flex; flex-direction: column; padding: 20px 10px; gap: 5px; }
+        .nav-item {
+            padding: 12px 15px; display: flex; align-items: center; gap: 12px;
+            color: #475569; text-decoration: none; border-radius: 8px; font-weight: 500; transition: all 0.2s;
+        }
+        .nav-item:hover, .nav-item.active { background-color: #f1f5f9; color: #0ea5e9; }
+        .nav-item.wp-active { background-color: #dcfce7; color: #16a34a; }
+        .nav-item i { font-size: 1.25rem; }
+
+        /* Main Content */
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .header {
+            background: var(--white); padding: 20px 30px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .header h2 { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
+        .page-content { padding: 30px; max-width: 900px; margin: 0 auto; width: 100%; }
+
+        /* Tarjetas o paneles */
+        .panel {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            border: 1px solid var(--border);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .btn-action {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+        }
+        .btn-action:hover { background-color: var(--primary-hover); transform: translateY(-2px); }
+        .btn-action:disabled { background-color: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none;}
+
+        .qr-placeholder {
+            width: 260px; height: 260px;
+            background: #f1f5f9;
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: #64748b;
+        }
+        .qr-placeholder img { width: 100%; height: 100%; border-radius: 10px; object-fit: cover; }
+
+        .status-badge {
+            display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 20px;
+        }
+        .status-connected { background-color: #dcfce7; color: #16a34a; }
+        .status-disconnected { background-color: #fee2e2; color: #dc2626; }
+        .status-loading { background-color: #fef3c7; color: #d97706; }
+
+        #consoleLog {
+            background: #0f172a;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            text-align: left;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            display: none;
+            margin-top: 20px;
+        }
+        
+    </style>
+</head>
+<body>
+
+<div class="dashboard-layout">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <img src="images/default/megasystems_logo.png" alt="Megasystems">
+        </div>
+        <nav class="nav-menu">
+            <a href="dashboard.html" class="nav-item"><i class="ph ph-squares-four"></i> Dashboard</a>
+            <a href="facturacion.html" class="nav-item"><i class="ph ph-receipt"></i> Facturación</a>
+            <a href="clientes.html" class="nav-item"><i class="ph ph-users"></i> Clientes</a>
+            <a href="catalogo.html" class="nav-item"><i class="ph ph-hard-drives"></i> Catálogo</a>
+            <a href="usuarios.html" class="nav-item"><i class="ph ph-shield-check"></i> Accesos (Usuarios)</a>
+            <a href="retenciones.html" class="nav-item"><i class="ph ph-hand-coins"></i> Retenciones</a>
+            <a href="cuentas_por_cobrar.html" class="nav-item"><i class="ph ph-money"></i> Cuentas por Cobrar</a>
+            <a href="cobranza_internet.html" class="nav-item"><i class="ph ph-wifi-high"></i> Cobranza Internet</a>
+            <a href="mensajeria.html" class="nav-item wp-active"><i class="ph ph-whatsapp-logo"></i> Mensajería WhatsApp</a>
+            <a href="configuracion.html" class="nav-item"><i class="ph ph-gear"></i> Configuración</a>
+        </nav>
+    </aside>
+
+    <!-- Main -->
+    <div class="main-content">
+        <header class="header">
+            <div>
+                <h2>Mensajería Automatizada</h2>
+                <div style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">Envío de recordatorios masivos por WhatsApp</div>
+            </div>
+            <div>
+                <!-- Opcional btn -->
+            </div>
+        </header>
+
+        <div class="page-content">
+            
+            <div class="panel" id="panelConexion">
+                <h3 style="margin-bottom: 5px;">Estado de Conexión</h3>
+                <div id="statusBadge" class="status-badge status-loading">⏳ Comprobando Estado...</div>
+                
+                <div id="qrContainer" style="display: none;">
+                    <div class="qr-placeholder" id="qrBox">
+                        <i class="ph ph-qr-code" style="font-size: 3rem; margin-bottom: 10px;"></i>
+                        <span>Generando QR...</span>
+                    </div>
+                    <p style="color: #64748b; font-size: 0.9rem; max-width: 400px; margin: 0 auto;">
+                        Abre WhatsApp en tu teléfono, ve a Dispositivos Vinculados y escanea el código para conectar el sistema.
+                    </p>
+                </div>
+
+                <div id="connectedContainer" style="display: none;">
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; max-width: 500px; margin: 0 auto 20px auto;">
+                        <i class="ph ph-check-circle" style="font-size: 3rem; color: #22c55e; margin-bottom: 10px;"></i>
+                        <h4 style="color: #166534; font-size: 1.1rem;">¡WhatsApp Vinculado Exitosamente!</h4>
+                        <p style="color: #15803d; font-size: 0.85rem; margin-top: 5px;">Tu sesión está iniciada de forma segura.</p>
+                    </div>
+
+                    <div style="text-align: left; max-width: 600px; margin: 0 auto 20px auto;">
+                        <label style="font-weight: 600; color: #334155; display: block; margin-bottom: 8px;">Redacta el mensaje a enviar:</label>
+                        <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">Puedes usar <b>[Nombre]</b> en cualquier parte del texto y nosotros lo reemplazaremos automáticamente por el nombre real del cliente antes de enviarlo.</p>
+                        <textarea id="textoMensaje" rows="6" style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; font-family: inherit; font-size: 0.95rem; line-height: 1.5; resize: vertical;">*Megasystems - Recordatorio de Pago* 🔔
+
+Hola *[Nombre]*, esperamos que tengas un feliz y productivo día. 
+
+Te escribimos de manera amistosa para recordarte tu pago del servicio de internet correspondiente al mes en curso. Por favor envíanos tu comprobante o referencia cuando lo realices. ¡Gracias!</textarea>
+                    </div>
+
+                    <button class="btn-action" id="btnEnviar" onclick="iniciarEnvioMasivo()">
+                        <i class="ph ph-paper-plane-tilt"></i> Lanzar Recordatorios Masivos
+                    </button>
+                    <p style="color: #64748b; font-size: 0.8rem; margin-top: 15px; max-width: 550px; margin-left: auto; margin-right: auto;">
+                        Esta acción buscará a los clientes activos, filtrará los que ya tengan recibos de pago en este mes en curso, y enviará un recordatorio automático amistoso uno por uno.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Cosola Simulada -->
+            <div id="consoleLog"></div>
+
+        </div>
+    </div>
+</div>
+
+<script src="mensajeria.js"></script>
+
+</body>
+</html>

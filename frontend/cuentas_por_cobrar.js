@@ -1,5 +1,6 @@
 const API_URL = '/api';
 const formatVez = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+const formatFecha = (fechaStr) => new Date(fechaStr).toLocaleDateString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' });
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Verificación de sesión
@@ -31,6 +32,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     const currentBcvRateLabel = document.getElementById('currentBcvRate');
     const payAmountUsd = document.getElementById('payAmountUsd');
     const payAmountVesLabel = document.getElementById('payAmountVes');
+    const payDate = document.getElementById('payDate');
+
+    // --- Tasa BCV según la fecha en que se recibió el pago ---
+    async function fetchRateForDate(fecha) {
+        try {
+            const res = await fetch(`${API_URL}/bcv/rate/${fecha}`);
+            const data = await res.json();
+
+            if (data.success) {
+                bcvRate = data.rate;
+            } else {
+                const manual = prompt(`No hay una tasa registrada en el historial para el día ${fecha}.\n\n¿Deseas ingresar la tasa manualmente para que el sistema la recuerde?`, data.fallbackRate);
+
+                if (manual !== null) {
+                    const valManual = parseFloat(manual.replace(',', '.'));
+                    if (!isNaN(valManual) && valManual > 0) {
+                        bcvRate = valManual;
+                        await fetch(`${API_URL}/bcv/rate-manual`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ rate: bcvRate, fecha: fecha })
+                        });
+                        alert(`¡Excelente! Tasa del día ${fecha} guardada: ${bcvRate} Bs/USD.`);
+                    } else {
+                        alert("Tasa inválida. Se usará la tasa de respaldo.");
+                        bcvRate = data.fallbackRate;
+                    }
+                } else {
+                    bcvRate = data.fallbackRate;
+                }
+            }
+            currentBcvRateLabel.innerText = formatVez(bcvRate);
+            updateVesPreview();
+        } catch (error) {
+            console.error("Error al cargar tasa histórica:", error);
+        }
+    }
+
+    payDate.addEventListener('change', (e) => {
+        if (e.target.value) fetchRateForDate(e.target.value);
+    });
+    // ---------------------------------------------------
 
     // 2. Cargar Tasa BCV
     async function loadBcvRate() {
@@ -69,12 +112,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     
                     tr.innerHTML = `
                         <td><strong>${c.cliente_nombre}</strong><br><small>${c.cliente_rif}</small></td>
-                        <td>${c.fecha_credito.split(' ')[0]}</td>
+                        <td>${formatFecha(c.fecha_credito)}</td>
                         <td>$${formatVez(c.monto_total_usd)}</td>
                         <td style="color: ${isPending ? '#ef4444' : '#10b981'}; font-weight: 700;">$${formatVez(c.monto_pendiente_usd)}</td>
                         <td><span class="badge ${isPending ? 'badge-pending' : 'badge-paid'}">${c.estado.toUpperCase()}</span></td>
                         <td>
                             <div style="display: flex; gap: 8px;">
+                                <button class="btn-icon" title="Editar Deuda" style="color:#6366f1;" onclick="openEditModal(${c.id})"><i class="ph ph-pencil-simple"></i></button>
                                 ${isPending ? `<button class="btn-icon btn-payment" title="Registrar Pago" onclick="openPaymentModal(${c.id})"><i class="ph ph-hand-coins"></i></button>` : ''}
                                 <button class="btn-icon btn-whatsapp" title="Enviar WhatsApp" onclick="sendWhatsApp(${c.id})"><i class="ph ph-whatsapp-logo"></i></button>
                                 <button class="btn-icon btn-email" title="Enviar Correo" onclick="sendEmail(${c.id})"><i class="ph ph-envelope"></i></button>
@@ -152,7 +196,60 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) { alert("Error de conexión"); }
     });
 
-    // 7. Gestión de Pagos (Modal)
+    // 7. Edición de Deuda (Modal)
+    const editModal = document.getElementById('editModal');
+    const editForm = document.getElementById('editForm');
+    let editingCuentaId = null;
+
+    window.openEditModal = (id) => {
+        const cuenta = currentCuentas.find(c => c.id === id);
+        if (!cuenta) return;
+
+        editingCuentaId = id;
+
+        document.getElementById('editPreviewCliente').innerText = `${cuenta.cliente_nombre} (${cuenta.cliente_rif})`;
+        document.getElementById('editPreviewConcepto').innerText = cuenta.notas || 'Sin especificar';
+        document.getElementById('editPreviewMonto').innerText = formatVez(cuenta.monto_total_usd);
+        document.getElementById('editPreviewFecha').innerText = formatFecha(cuenta.fecha_credito);
+
+        document.getElementById('editMontoTotal').value = cuenta.monto_total_usd;
+        document.getElementById('editFechaCredito').value = new Date(cuenta.fecha_credito).toISOString().split('T')[0];
+        document.getElementById('editNotas').value = cuenta.notas || '';
+
+        editModal.style.display = 'flex';
+    };
+
+    window.closeEditModal = () => {
+        editModal.style.display = 'none';
+    };
+
+    editForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const payload = {
+            monto_total_usd: parseFloat(document.getElementById('editMontoTotal').value),
+            fecha_credito: document.getElementById('editFechaCredito').value,
+            notas: document.getElementById('editNotas').value
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/cuentas/${editingCuentaId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`Deuda actualizada. Nuevo saldo pendiente: $${formatVez(data.nuevo_pendiente)}`);
+                closeEditModal();
+                loadCuentas();
+            } else {
+                alert("Error: " + data.error);
+            }
+        } catch (e) { alert("Error de conexión"); }
+    });
+
+    // 8. Gestión de Pagos (Modal)
     window.openPaymentModal = (id) => {
         const cuenta = currentCuentas.find(c => c.id === id);
         if(!cuenta) return;
@@ -162,7 +259,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         payTotalPending.innerText = `$${formatVez(cuenta.monto_pendiente_usd)}`;
         payAmountUsd.value = cuenta.monto_pendiente_usd;
         payAmountUsd.max = cuenta.monto_pendiente_usd;
-        
+        payDate.value = new Date().toISOString().split('T')[0];
+
+        currentBcvRateLabel.innerText = formatVez(bcvRate);
         updateVesPreview();
         paymentModal.style.display = 'flex';
     };
@@ -190,7 +289,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             monto_pagado_ves: ves,
             tasa_bcv: bcvRate,
             metodo_pago: document.getElementById('payMethod').value,
-            notas: document.getElementById('payNotes').value
+            notas: document.getElementById('payNotes').value,
+            fecha_pago: payDate.value
         };
 
         try {
@@ -201,16 +301,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             const data = await res.json();
             if(data.success) {
-                alert(data.message);
                 closeModal();
                 loadCuentas();
+                if (confirm(`${data.message}\n\nSaldo pendiente actual: $${formatVez(data.nuevo_pendiente)}\n\n¿Desea abrir el recibo del abono para imprimirlo o guardarlo como PDF?`)) {
+                    window.location.href = `print_abono.html?id=${data.abono_id}`;
+                }
             } else {
                 alert("Error: " + data.error);
             }
         } catch (e) { alert("Error de conexión"); }
     });
 
-    // 8. Notificaciones
+    // 9. Notificaciones
     window.sendWhatsApp = (id) => {
         const c = currentCuentas.find(x => x.id === id);
         if(!c) return;

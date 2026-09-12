@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Recibo de Pago - Megasystems</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #0f172a;
+            --accent: #2563eb;
+            --text-main: #334155;
+            --text-light: #64748b;
+            --bg-light: #f8fafc;
+            --border-color: #cbd5e1;
+        }
+
+        @media print {
+            body { background: white !important; margin: 0; padding: 0; }
+            .no-print { display: none !important; }
+            .print-container { box-shadow: none !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; border: none !important; }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e2e8f0;
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .print-container {
+            background: white;
+            width: 700px;
+            max-width: 100%;
+            padding: 50px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo-container { width: 150px; height: auto; }
+        .logo-container img { width: 100%; height: auto; border-radius: 8px; }
+
+        .company-info { text-align: right; }
+        .company-name { font-size: 1.5rem; font-weight: 800; color: var(--secondary); margin: 0; letter-spacing: -0.5px; }
+        .company-subtitle { font-size: 0.9rem; color: var(--accent); font-weight: 600; margin-top: 2px; margin-bottom: 8px; }
+        .company-contact { font-size: 0.85rem; color: var(--text-light); line-height: 1.4; }
+
+        .doc-title-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; }
+        .doc-title { font-size: 2rem; font-weight: 800; color: var(--primary); margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+
+        .doc-meta { text-align: right; font-size: 0.95rem; background: var(--bg-light); padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); }
+        .doc-meta strong { color: var(--secondary); }
+
+        .client-box { background-color: var(--bg-light); border: 1px solid var(--border-color); border-radius: 6px; padding: 15px 20px; margin-bottom: 30px; }
+        .client-box h3 { margin-top: 0; margin-bottom: 10px; font-size: 0.9rem; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+        .client-details p { margin: 5px 0; font-size: 0.95rem; }
+        .client-details strong { color: var(--secondary); }
+
+        .concepto-box { background: #fffbeb; border: 1px solid #fde68a; padding: 15px; border-radius: 6px; margin-bottom: 30px; }
+        .concepto-box h4 { margin: 0 0 5px 0; color: #b45309; font-size: 0.9rem; }
+        .concepto-box p { margin: 0; font-size: 0.95rem; }
+
+        .totals-box { background-color: var(--bg-light); border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; margin-bottom: 30px; }
+        .totals-row { display: flex; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid var(--border-color); font-size: 0.95rem; }
+        .totals-row:last-child { border-bottom: none; }
+        .totals-row strong { color: var(--secondary); }
+
+        .grand-total-row { background-color: var(--primary); color: white; font-size: 1.15rem; font-weight: 700; }
+        .grand-total-row strong { color: white; }
+
+        .signatures-section { display: flex; justify-content: center; margin-top: 60px; }
+        .signature-box { width: 60%; text-align: center; }
+        .signature-line { border-top: 1px solid var(--text-main); margin-bottom: 8px; padding-top: 8px; }
+        .signature-label { font-size: 0.85rem; color: var(--text-light); }
+
+        .action-buttons { text-align: center; margin-bottom: 20px; }
+        .btn { background: var(--accent); color: white; border: none; padding: 12px 24px; font-size: 1rem; font-weight: 600; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2); transition: background 0.2s; }
+        .btn:hover { background: #1d4ed8; }
+
+        .btn-back { background: var(--bg-light); color: var(--secondary); border: 1px solid var(--border-color); padding: 12px 24px; font-size: 1rem; font-weight: 600; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; margin-right: 15px; }
+        .btn-back:hover { background: #e2e8f0; }
+    </style>
+</head>
+<body>
+
+    <div class="print-container">
+
+        <div class="action-buttons no-print">
+            <a href="recibos.html" class="btn-back">⬅️ Volver a Recibos</a>
+            <button class="btn" onclick="window.print()">🖨️ Imprimir / PDF</button>
+        </div>
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="logo-container">
+                <img src="images/logo_jarg.jpeg" alt="Logo Empresa" onerror="this.src='images/default/megasystems_logo.png'">
+            </div>
+
+            <div class="company-info">
+                <h1 class="company-name">JOSÉ ANDRÉS ROJO GIL</h1>
+                <div class="company-subtitle">SERVICIOS TECNOLÓGICOS</div>
+                <div class="company-contact">
+                    Sistemas y Desarrollo de Software<br>
+                    <strong>Teléfono:</strong> 0426-5771525<br>
+                    <strong>Correo:</strong> joserojo2000@gmail.com
+                </div>
+            </div>
+        </div>
+
+        <!-- DOC INFO -->
+        <div class="doc-title-row">
+            <h2 class="doc-title">Recibo de Pago</h2>
+
+            <div class="doc-meta">
+                <div style="margin-bottom: 5px;"><strong>Nro:</strong> <span id="lblNro">Cargando...</span></div>
+                <div><strong>Fecha:</strong> <span id="lblFecha">--/--/----</span></div>
+            </div>
+        </div>
+
+        <!-- CLIENT INFO -->
+        <div class="client-box">
+            <h3>Recibido de</h3>
+            <div class="client-details">
+                <p><strong>Razón Social:</strong> <span id="lblClientName">...</span></p>
+                <p><strong>RIF / C.I:</strong> <span id="lblClientRif">...</span></p>
+                <p><strong>Teléfono:</strong> <span id="lblClientTlf">...</span></p>
+            </div>
+        </div>
+
+        <!-- CONCEPTO -->
+        <div class="concepto-box">
+            <h4>Concepto</h4>
+            <p id="lblConcepto">Sin especificar.</p>
+        </div>
+
+        <!-- MONTO -->
+        <div class="totals-box">
+            <div class="totals-row">
+                <span>Método de Pago:</span>
+                <strong id="lblMetodo">-</strong>
+            </div>
+            <div class="totals-row grand-total-row">
+                <span>MONTO RECIBIDO (USD):</span>
+                <strong>$<span id="lblMontoUsd">0.00</span></strong>
+            </div>
+            <div class="totals-row" style="background:#dcfce7;">
+                <span style="color:#166534; font-weight:700;">EQUIVALENTE EN BOLÍVARES:</span>
+                <strong style="color:#166534; font-size:1.1rem;">Bs. <span id="lblMontoVes">0.00</span></strong>
+            </div>
+        </div>
+
+        <p style="font-size: 0.8rem; color: var(--text-light); text-align:center;" id="lblObservaciones"></p>
+
+        <!-- FIRMA -->
+        <div class="signatures-section">
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-label">Recibido por</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        const formatVez = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+
+        async function loadRecibo() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+
+            if (!id) {
+                alert("ID de recibo no proporcionado.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/recibos/${id}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    const r = data.data;
+                    const c = r.cliente;
+
+                    document.getElementById('lblNro').innerText = r.nro_recibo;
+                    document.getElementById('lblFecha').innerText = new Date(r.fecha).toLocaleDateString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+                    document.getElementById('lblClientName').innerText = c.nombre_razon;
+                    document.getElementById('lblClientRif').innerText = c.rif;
+                    document.getElementById('lblClientTlf').innerText = c.telefono || 'N/A';
+
+                    document.getElementById('lblConcepto').innerText = r.concepto || 'Sin especificar.';
+
+                    const metodosLabels = { efectivo: 'Efectivo', transferencia: 'Transferencia Bancaria', pago_movil: 'Pago Móvil', zelle: 'Zelle', binance: 'Binance / Cripto', otro: 'Otro' };
+                    document.getElementById('lblMetodo').innerText = metodosLabels[r.metodo_pago] || r.metodo_pago || '-';
+
+                    document.getElementById('lblMontoUsd').innerText = formatVez(parseFloat(r.monto_usd));
+                    document.getElementById('lblMontoVes').innerText = formatVez(parseFloat(r.monto_ves) || 0);
+
+                    document.getElementById('lblObservaciones').innerText = r.observaciones || '';
+
+                } else {
+                    alert("Error cargando el recibo");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Fallo de comunicación con el servidor");
+            }
+        }
+
+        window.onload = loadRecibo;
+    </script>
+</body>
+</html>

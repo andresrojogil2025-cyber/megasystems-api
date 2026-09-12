@@ -116,7 +116,9 @@ CREATE TABLE IF NOT EXISTS abonos (
     monto_pagado_ves NUMERIC(10,3) NOT NULL,
     tasa_bcv NUMERIC(10,4) NOT NULL,
     metodo_pago VARCHAR(50),
-    notas TEXT
+    notas TEXT,
+    saldo_anterior_usd NUMERIC(10,2),
+    saldo_posterior_usd NUMERIC(10,2)
 );
 
 CREATE TABLE IF NOT EXISTS historial_tasas (
@@ -124,4 +126,44 @@ CREATE TABLE IF NOT EXISTS historial_tasas (
     fecha DATE UNIQUE NOT NULL,
     tasa NUMERIC(10,4) NOT NULL,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS notas_entrega (
+    id SERIAL PRIMARY KEY,
+    cliente_id INTEGER NOT NULL REFERENCES entidades(id),
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    nro_nota_entrega VARCHAR(50) UNIQUE NOT NULL,
+    subtotal_usd NUMERIC(10,2) NOT NULL,
+    total_usd NUMERIC(10,2) NOT NULL,
+    tasa_bcv NUMERIC(10,4),
+    subtotal_ves NUMERIC(10,3),
+    total_ves NUMERIC(10,3),
+    descuento_usd NUMERIC(10,2) DEFAULT 0,
+    descuento_ves NUMERIC(10,3) DEFAULT 0,
+    observaciones TEXT,
+    estado VARCHAR(20) DEFAULT 'entregada'
+);
+
+CREATE TABLE IF NOT EXISTS nota_entrega_detalles (
+    id SERIAL PRIMARY KEY,
+    nota_entrega_id INTEGER NOT NULL REFERENCES notas_entrega(id),
+    catalogo_id INTEGER NOT NULL REFERENCES catalogo(id),
+    cantidad INTEGER NOT NULL,
+    precio_unitario_usd NUMERIC(10,2) NOT NULL,
+    precio_unitario_ves NUMERIC(10,3),
+    total_usd NUMERIC(10,2) NOT NULL,
+    total_ves NUMERIC(10,3)
+);
+
+CREATE TABLE IF NOT EXISTS recibos_pago (
+    id SERIAL PRIMARY KEY,
+    cliente_id INTEGER NOT NULL REFERENCES entidades(id),
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    nro_recibo VARCHAR(50) UNIQUE NOT NULL,
+    monto_usd NUMERIC(10,2) NOT NULL,
+    tasa_bcv NUMERIC(10,4),
+    monto_ves NUMERIC(10,3),
+    metodo_pago VARCHAR(50) DEFAULT 'efectivo',
+    concepto TEXT,
+    observaciones TEXT
 );

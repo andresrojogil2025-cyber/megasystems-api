@@ -4,9 +4,15 @@ const billerController = {
     // 1. Crear Cotización (Sin impacto fiscal)
     createQuote: async (req, res) => {
         try {
-            const { client_id, items } = req.body;
+            const { client_id, items, tasa_bcv_hoy } = req.body;
             let subtotal_usd = 0;
             
+            if(!tasa_bcv_hoy || tasa_bcv_hoy <= 0) {
+                return res.status(400).json({error: "La Tasa BCV es obligatoria para guardar la cotización."});
+            }
+
+            const tasa_bcv_final = Math.round(tasa_bcv_hoy * 100) / 100;
+
             // Validar items
             for (let item of items) {
                 const row = await db.queryAsync('SELECT precio_usd FROM catalogo WHERE id = ?', [item.catalogo_id]);
@@ -25,8 +31,8 @@ const billerController = {
 
             // Inserción cotización
             const info = await db.runAsync(
-                'INSERT INTO cotizaciones (cliente_id, nro_cotizacion, subtotal_usd, iva_usd, total_usd) VALUES (?, ?, ?, ?, ?)',
-                [client_id, newNro, subtotal_usd, iva_usd, total_usd]
+                'INSERT INTO cotizaciones (cliente_id, nro_cotizacion, subtotal_usd, iva_usd, total_usd, tasa_bcv) VALUES (?, ?, ?, ?, ?, ?)',
+                [client_id, newNro, subtotal_usd, iva_usd, total_usd, tasa_bcv_final]
             );
             const cotizacion_id = info.lastID;
 

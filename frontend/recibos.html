@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Megasystems - Facturación</title>
+    <title>Megasystems - Recibos de Pago</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="style.css">
@@ -15,28 +15,26 @@
         .btn-back { display: flex; align-items: center; gap: 8px; color: var(--color-primary); text-decoration: none; font-weight: 500; }
         .btn-back:hover { text-decoration: underline; }
 
-        .invoice-container { display: grid; grid-template-columns: 1fr 350px; gap: 25px; align-items: start; }
+        .form-container { display: grid; grid-template-columns: 1fr 350px; gap: 25px; align-items: start; }
         .panel { background: var(--color-surface); padding: 25px; border-radius: var(--border-radius-lg); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .panel h3 { margin-bottom: 15px; color: var(--color-text-main); font-size: 1.1rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px;}
 
-        /* Buscadores */
         .search-box { position: relative; margin-bottom: 15px; }
         .search-box input { width: 100%; padding: 10px 15px 10px 40px; border: 1px solid #d1d5db; border-radius: var(--border-radius-sm); outline: none;}
         .search-box input:focus { border-color: var(--color-primary); }
         .search-box i { position: absolute; left: 12px; top: 12px; color: var(--color-text-muted); }
-        
+
         .autocomplete-results { position: absolute; top:100%; left:0; right:0; background: white; border:1px solid #d1d5db; z-index:10; border-radius:4px; max-height:200px; overflow-y:auto; box-shadow:0 4px 10px rgba(0,0,0,0.1); display:none;}
         .autocomplete-results div { padding:10px; cursor:pointer; border-bottom:1px solid #f3f4f6; }
         .autocomplete-results div:hover { background-color:#f0fdf4; }
 
-        /* Tabla de Facturación */
-        .items-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .items-table th { background: var(--color-bg-light); padding: 12px; text-align: left; font-weight: 600; color: var(--color-text-muted); font-size: 0.9rem; }
-        .items-table td { padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
-        .items-table input.qty { width: 60px; padding: 5px; border: 1px solid #d1d5db; border-radius: 4px; text-align: center; }
-        .items-table .btn-delete { color: #ef4444; background: none; border: none; cursor: pointer; font-size: 1.2rem; }
+        .field-group { margin-bottom: 18px; }
+        .field-group label { display:block; margin-bottom:6px; font-weight:600; color: var(--color-text-main); font-size:0.9rem; }
+        .field-group input, .field-group select, .field-group textarea {
+            width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 4px; outline: none; font-family: inherit; box-sizing: border-box;
+        }
+        textarea { resize: vertical; min-height: 70px; }
 
-        /* Totales Panel Lateral */
         .totals-box { background: var(--color-bg-light); padding: 20px; border-radius: var(--border-radius-sm); margin-bottom: 20px; }
         .totals-row { display: flex; justify-content: space-between; margin-bottom: 10px; color: var(--color-text-muted); }
         .totals-row.grand-total { border-top: 1px solid #d1d5db; padding-top: 15px; margin-top: 10px; font-weight: 700; color: var(--color-text-main); font-size: 1.25rem; }
@@ -44,14 +42,11 @@
         .currency-label.ves { background: var(--color-secondary); }
 
         .btn-full { width: 100%; padding: 15px; border-radius: var(--border-radius-sm); font-size: 1rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s;}
-        .btn-invoice { background: var(--color-primary); color: white; margin-bottom: 10px;}
+        .btn-invoice { background: var(--color-primary); color: white; }
         .btn-invoice:hover { background: var(--color-primary-hover); }
-        .btn-quote { background: white; color: var(--color-text-main); border: 1px solid #d1d5db; }
-        .btn-quote:hover { background: #f9fafb; }
 
         @media (max-width: 992px) {
-            .invoice-container { grid-template-columns: 1fr; }
-            .items-table { display: block; overflow-x: auto; white-space: nowrap; }
+            .form-container { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -59,7 +54,7 @@
 
     <div class="page-header">
         <a href="dashboard.html" class="btn-back"><i class="ph ph-arrow-left"></i> Volver al Dashboard</a>
-        <h2>Facturación Bimonetaria</h2>
+        <h2>Recibos de Pago</h2>
     </div>
 
     <!-- Tasa Viva desde el LocalStorage (Guardada en Dashboard) -->
@@ -67,24 +62,14 @@
         Tasa Oficial (BCV) del día: <span id="displayBcvRate">Calculando...</span> VES/USD
     </div>
 
-    <div class="invoice-container">
-        <!-- Panel Izquierdo: Selección -->
+    <div class="form-container">
+        <!-- Panel Izquierdo: Datos del recibo -->
         <div class="left-panel" style="display: flex; flex-direction: column; gap: 20px;">
-            <!-- Buscador de Cotizaciones -->
-            <div class="panel" style="border: 2px solid var(--color-primary); background: #eff6ff;">
-                <h3 style="color: var(--color-primary); border-color: var(--color-primary);"><i class="ph ph-file-search"></i> Recuperar Cotización</h3>
-                <div class="search-box">
-                    <i class="ph ph-hash"></i>
-                    <input type="text" id="searchQuote" placeholder="Buscar por Nro o Nombre de Cliente..." autocomplete="off">
-                    <div id="quotesDropdown" class="autocomplete-results"></div>
-                </div>
-                <p style="font-size: 0.8rem; color: #1e40af; margin-top: -5px;">Carga una cotización guardada para convertirla en factura fiscal.</p>
-            </div>
 
             <!-- Fecha de Emisión -->
             <div class="panel" style="display: flex; gap: 15px; align-items: center; justify-content: space-between;">
-                <h3 style="margin-bottom: 0; border: none; padding: 0;"><i class="ph ph-calendar"></i> Fecha de Emisión</h3>
-                <input type="date" id="invoiceDate" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; outline: none; font-family: inherit;">
+                <h3 style="margin-bottom: 0; border: none; padding: 0;"><i class="ph ph-calendar"></i> Fecha del Pago</h3>
+                <input type="date" id="reciboDate" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; outline: none; font-family: inherit; width:auto;">
             </div>
 
             <!-- Cliente -->
@@ -93,13 +78,13 @@
                     <h3>1. Seleccionar Cliente</h3>
                     <a href="#" onclick="document.getElementById('modalNuevoCliente').style.display='flex'; return false;" style="font-size:0.85rem; color:var(--color-primary);">+ Nuevo Cliente</a>
                 </div>
-                
+
                 <div class="search-box">
                     <i class="ph ph-magnifying-glass"></i>
                     <input type="text" id="searchClient" placeholder="Buscar cliente por Nombre o RIF..." autocomplete="off">
                     <div id="clientsDropdown" class="autocomplete-results"></div>
                 </div>
-                
+
                 <div id="selectedClientBox" style="display: none; background: #f0fdf4; padding: 15px; border-radius: 6px; border: 1px solid #bbf7d0; display:flex; justify-content:space-between; align-items:center;">
                     <div>
                         <strong id="labelClientName" style="color:#166534;">EMPRESA EJEMPLO C.A.</strong> <br>
@@ -108,74 +93,65 @@
                 </div>
             </div>
 
-            <!-- Catálogo -->
+            <!-- Monto y método de pago -->
             <div class="panel">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3>2. Agregar Servicios o Productos</h3>
-                    <a href="catalogo.html" target="_blank" style="font-size:0.85rem; color:var(--color-primary);">+ Nuevo Ítem</a>
+                <h3>2. Datos del Pago Recibido</h3>
+
+                <div class="field-group">
+                    <label>Monto Recibido</label>
+                    <div style="display:flex; gap:10px;">
+                        <input type="number" id="montoPago" min="0" step="0.01" placeholder="0.00">
+                        <select id="monedaPago" style="width:120px;">
+                            <option value="USD">USD</option>
+                            <option value="VES">VES</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="search-box">
-                    <i class="ph ph-magnifying-glass"></i>
-                    <input type="text" id="searchCatalog" placeholder="Buscar productos y servicios..." autocomplete="off">
-                    <div id="catalogDropdown" class="autocomplete-results"></div>
+
+                <div class="field-group">
+                    <label>Método de Pago</label>
+                    <select id="metodoPago">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="transferencia">Transferencia Bancaria</option>
+                        <option value="pago_movil">Pago Móvil</option>
+                        <option value="zelle">Zelle</option>
+                        <option value="binance">Binance / Cripto</option>
+                        <option value="otro">Otro</option>
+                    </select>
                 </div>
-                
-                <table class="items-table" id="itemsTable">
-                    <thead>
-                        <tr>
-                            <th>Descripción</th>
-                            <th>P. Unitario (USD/VES)</th>
-                            <th>Cant.</th>
-                            <th>Total (USD/VES)</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="invoiceItemsBody">
-                        <tr><td colspan="5" style="text-align:center; color:gray;">No ha agregado ningún ítem.</td></tr>
-                    </tbody>
-                </table>
+
+                <div class="field-group">
+                    <label>Concepto</label>
+                    <input type="text" id="concepto" placeholder="Ej: Abono por servicio de mantenimiento de red WiFi">
+                </div>
+
+                <div class="field-group" style="margin-bottom:0;">
+                    <label>Observaciones (Opcional)</label>
+                    <textarea id="observaciones" placeholder="Notas adicionales..."></textarea>
+                </div>
             </div>
         </div>
 
-        <!-- Panel Derecho: Totales -->
+        <!-- Panel Derecho: Resumen -->
         <div class="panel right-panel">
-            <h3>3. Liquidación y Totales</h3>
-            
+            <h3>Resumen del Recibo</h3>
+
             <div class="totals-box">
-                <h4 style="margin-bottom: 10px; color: var(--color-text-main); font-size: 0.95rem;">Montos en Dólares</h4>
-                <div class="totals-row">
-                    <span>Subtotal:</span>
-                    <span><span class="currency-label">USD</span> $<span id="totSubUsd">0.00</span></span>
-                </div>
-                <div class="totals-row">
-                    <span>I.V.A (16%):</span>
-                    <span><span class="currency-label">USD</span> $<span id="totIvaUsd">0.00</span></span>
-                </div>
-                <div class="totals-row grand-total">
-                    <span>Total USD:</span>
-                    <span>$<span id="totGrandUsd">0.00</span></span>
+                <div class="totals-row grand-total" style="border-top:none; padding-top:0; margin-top:0;">
+                    <span>Monto Dólares:</span>
+                    <span><span class="currency-label">USD</span> $<span id="montoResumenUsd">0.00</span></span>
                 </div>
             </div>
 
             <div class="totals-box" style="background: #ecfdf5; border: 1px solid #a7f3d0;">
-                <h4 style="margin-bottom: 10px; color: var(--color-secondary); font-size: 0.95rem;">Equivalente Oficial BCV</h4>
-                <div class="totals-row" style="color: #065f46;">
-                    <span>Subtotal:</span>
-                    <span><span class="currency-label ves">VES</span> Bs. <span id="totSubVes">0.00</span></span>
-                </div>
-                <div class="totals-row" style="color: #065f46;">
-                    <span>I.V.A (16%):</span>
-                    <span><span class="currency-label ves">VES</span> Bs. <span id="totIvaVes">0.00</span></span>
-                </div>
                 <div class="totals-row grand-total" style="color: #047857; border-color: #6ee7b7;">
-                    <span>Total VES a Pagar:</span>
-                    <span>Bs. <span id="totGrandVes">0.00</span></span>
+                    <span>Monto Bolívares:</span>
+                    <span>Bs. <span id="montoResumenVes">0.00</span></span>
                 </div>
             </div>
+            <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: -10px; margin-bottom: 20px;">Comprobante interno de cobro. No sustituye la factura fiscal.</p>
 
-            <button class="btn-full btn-invoice" id="btnProcesarFactura"><i class="ph ph-receipt"></i> Generar Factura Fiscal</button>
-            <button class="btn-full btn-quote" id="btnProcesarCotizacion"><i class="ph ph-file-text"></i> Guardar como Cotización</button>
-            <button class="btn-full btn-quote" id="btnImprimirCotizacion" style="display:none; margin-top: 10px; border-color: #3b82f6; color: #1d4ed8; background: #eff6ff;"><i class="ph ph-printer"></i> Imprimir / PDF Cotización</button>
+            <button class="btn-full btn-invoice" id="btnGenerarRecibo"><i class="ph ph-receipt"></i> Generar Recibo</button>
         </div>
     </div>
 
@@ -204,6 +180,6 @@
         </div>
     </div>
 
-    <script src="facturacion.js"></script>
+    <script src="recibos.js"></script>
 </body>
 </html>

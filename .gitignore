@@ -4,15 +4,26 @@ node_modules/
 # Variables de entorno (contienen contraseñas - NUNCA subir)
 .env
 
+# Credenciales y claves sensibles
+SUPABASE/
+
 # Base de datos local SQLite (ya migramos a Supabase)
 database/megasystems.sqlite
+
+# Archivos temporales de Google Drive
+.tmp.driveupload/
+.tmp.drivedownload/
+
+# WhatsApp Web (sesiones locales)
+backend/.wwebjs_auth/
+backend/.wwebjs_cache/
 
 # Archivos temporales
 *.log
 .DS_Store
 Thumbs.db
 
-# Archivos de test
+# Archivos de test y scripts de fix locales
 backend/test_*.js
 backend/test_*.json
 backend/check_*.js
