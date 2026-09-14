@@ -197,7 +197,69 @@ Te escribimos para recordarte amablemente tu pago del servicio de internet por e
     }
 };
 
+/**
+ * 3. Enviar mensajes automáticos de cobranza por grupo
+ * tipo: 'recordatorio' | 'suspension'
+ * grupo: 'mensual' (paga 1-5) | 'quincenal' (paga 15-20)
+ */
+const enviarCobranzaAutomatica = async (grupo, tipo) => {
+    if (!isConnected || !wpClient) {
+        console.log('[WhatsApp-CRON] No conectado. Se omite el envío automático.');
+        return;
+    }
+
+    const sql = `
+        SELECT id, celular, nombre, saldo_pendiente
+        FROM clientes_internet
+        WHERE estado = 'activo'
+          AND grupo_pago = ?
+          AND estado_pago_mes = 'pendiente'
+          AND celular IS NOT NULL
+          AND length(celular) >= 10
+    `;
+
+    let clientes;
+    try {
+        clientes = await queryAsync(sql, [grupo]);
+    } catch (err) {
+        console.error('[WhatsApp-CRON] Error consultando clientes:', err.message);
+        return;
+    }
+
+    if (!clientes || clientes.length === 0) {
+        console.log(`[WhatsApp-CRON] Sin clientes pendientes para grupo=${grupo}`);
+        return;
+    }
+
+    console.log(`[WhatsApp-CRON] Enviando ${tipo} a ${clientes.length} clientes (grupo: ${grupo})`);
+
+    for (const c of clientes) {
+        const numFormateado = formatPhoneNumber(c.celular);
+        if (!numFormateado) continue;
+
+        const saldo = c.saldo_pendiente && parseFloat(c.saldo_pendiente) > 0
+            ? `\n\n⚠️ *Saldo pendiente de meses anteriores: $${parseFloat(c.saldo_pendiente).toFixed(2)}*`
+            : '';
+
+        let mensaje;
+        if (tipo === 'recordatorio') {
+            mensaje = `*Megasystems Internet* 🌐\n\nHola *${c.nombre}*, esperamos estés bien.\n\nTe recordamos que está disponible el pago de tu servicio de internet del mes en curso. Por favor realiza tu *Pago Móvil* a:\n\n🏦 Banco Provincial o Banco Venezuela\n📞 Tu número de contacto\n\nEnvíanos el comprobante por este mismo chat.${saldo}`;
+        } else {
+            mensaje = `*Megasystems Internet* ⚠️\n\nHola *${c.nombre}*, te notificamos que a partir de mañana tu servicio de internet será *SUSPENDIDO* por falta de pago.\n\nPara evitar la suspensión, realiza tu pago y envíanos el comprobante hoy.${saldo}`;
+        }
+
+        try {
+            await wpClient.sendMessage(numFormateado, mensaje);
+            console.log(`✅ [CRON] Enviado a ${c.nombre}`);
+            await delay(Math.floor(Math.random() * 3000) + 2500);
+        } catch (err) {
+            console.error(`❌ [CRON] Error enviando a ${c.nombre}:`, err.message);
+        }
+    }
+};
+
 module.exports = {
     getStatus,
-    sendReminders
+    sendReminders,
+    enviarCobranzaAutomatica
 };

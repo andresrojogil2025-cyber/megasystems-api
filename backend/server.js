@@ -38,6 +38,7 @@ const usuariosController = require('./controllers/usuariosController');
 const retencionesController = require('./controllers/retencionesController');
 const cuentasController = require('./controllers/cuentasController');
 const mikrotikController = require('./controllers/mikrotikController');
+const { enviarCobranzaAutomatica } = require('./controllers/whatsappController');
 const whatsappController = require('./controllers/whatsappController');
 const notaEntregaController = require('./controllers/notaEntregaController');
 const recibosController = require('./controllers/recibosController');
@@ -121,6 +122,9 @@ app.post('/api/mikrotik/suspender-libre', mikrotikController.suspenderLibre);
 app.get('/api/mikrotik/sectores', sectoresController.getSectores);
 app.post('/api/mikrotik/sectores', sectoresController.createSector);
 
+// Pago manual del mes
+app.post('/api/mikrotik/clientes/:id/pago-mes', mikrotikController.marcarPagoMes);
+
 // Rutas Fiscales
 app.get('/api/seniat/sales-book', seniatController.generateSalesBook);
 
@@ -142,11 +146,40 @@ app.use((req, res) => {
 app.listen(PORT, () => {
     console.log(`Servidor de Megasystems escuchando en http://localhost:${PORT}`);
     
-    // Iniciar el Cron Job de suspensión diaria por prórrogas vencidas
-    // Se ejecutará todos los días a las 00:01 AM
+    // Cron: verificar prórrogas vencidas (diario 00:01)
     cron.schedule('1 0 * * *', () => {
-        console.log('[CRON] Iniciando rutina de verificación de prórrogas...');
+        console.log('[CRON] Verificando prórrogas vencidas...');
         mikrotikController.procesarPromesasVencidas();
+    });
+
+    // Cron: resetear estado_pago_mes el día 1 de cada mes a las 00:05
+    cron.schedule('5 0 1 * *', () => {
+        console.log('[CRON] Reseteando pagos del mes...');
+        mikrotikController.resetearPagosMes();
+    });
+
+    // ── GRUPO MENSUAL (paga del 1 al 5) ──
+    // Recordatorio diario días 1 al 5 a las 09:00
+    cron.schedule('0 9 1-5 * *', () => {
+        console.log('[CRON] Recordatorio cobranza grupo mensual (días 1-5)...');
+        enviarCobranzaAutomatica('mensual', 'recordatorio');
+    });
+    // Aviso suspensión día 6 a las 09:00
+    cron.schedule('0 9 6 * *', () => {
+        console.log('[CRON] Aviso suspensión grupo mensual (día 6)...');
+        enviarCobranzaAutomatica('mensual', 'suspension');
+    });
+
+    // ── GRUPO QUINCENAL (paga del 15 al 20) ──
+    // Recordatorio diario días 15 al 20 a las 09:00
+    cron.schedule('0 9 15-20 * *', () => {
+        console.log('[CRON] Recordatorio cobranza grupo quincenal (días 15-20)...');
+        enviarCobranzaAutomatica('quincenal', 'recordatorio');
+    });
+    // Aviso suspensión día 21 a las 09:00
+    cron.schedule('0 9 21 * *', () => {
+        console.log('[CRON] Aviso suspensión grupo quincenal (día 21)...');
+        enviarCobranzaAutomatica('quincenal', 'suspension');
     });
 });
 

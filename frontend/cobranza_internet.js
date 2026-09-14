@@ -2,8 +2,8 @@
 let clientesCache = [];
 
 // API URL (Relativa o absoluta dependiendo de cómo está desplegado)
-const API_URL = 'http://localhost:3050/api/mikrotik';
-// Podrías necesitar ajustar esto si usas window.location.origin para producción
+const API_URL = '/api/mikrotik';
+const WP_URL = '/api/whatsapp';
 
 document.addEventListener('DOMContentLoaded', () => {
     cargarClientes();
@@ -80,9 +80,22 @@ function renderTabla(filtro = '') {
         </td></tr>`;
     } else {
         filtrados.forEach(c => {
-            const estadoHtml = c.estado === 'activo' 
+            const estadoHtml = c.estado === 'activo'
                 ? `<span class="status-badge activo"><i class="ph ph-check-circle"></i> Activo</span>`
                 : `<span class="status-badge suspendido"><i class="ph ph-warning-circle"></i> Suspendido</span>`;
+
+            // Badge de pago del mes
+            const grupoBadge = c.grupo_pago === 'quincenal'
+                ? `<div style="font-size:0.72rem; color:#7c3aed; margin-top:3px;"><i class="ph ph-calendar"></i> Paga 15-20</div>`
+                : `<div style="font-size:0.72rem; color:#0369a1; margin-top:3px;"><i class="ph ph-calendar"></i> Paga 1-5</div>`;
+
+            const pagoBadge = c.estado_pago_mes === 'pagado'
+                ? `<span style="font-size:0.72rem; background:#dcfce7; color:#166534; padding:2px 7px; border-radius:20px; font-weight:600;"><i class="ph ph-check"></i> Mes pagado</span>`
+                : `<span style="font-size:0.72rem; background:#fef9c3; color:#854d0e; padding:2px 7px; border-radius:20px; font-weight:600; cursor:pointer;" onclick="marcarPagado('${c.id}')"><i class="ph ph-money"></i> Pendiente — clic para pagar</span>`;
+
+            const saldoPendiente = (c.saldo_pendiente && parseFloat(c.saldo_pendiente) > 0)
+                ? `<div style="font-size:0.72rem; color:#dc2626; margin-top:3px; font-weight:600;"><i class="ph ph-warning"></i> Saldo anterior: $${parseFloat(c.saldo_pendiente).toFixed(2)}</div>`
+                : '';
 
             // Badge si tiene convenio (no se corta)
             let convenioHtml = c.auto_suspension === false 
@@ -116,6 +129,8 @@ function renderTabla(filtro = '') {
                 <tr>
                     <td style="font-weight: 500;">
                         ${c.nombre}
+                        ${grupoBadge}
+                        ${saldoPendiente}
                         ${convenioHtml}
                     </td>
                     <td>${planTxt}</td>
@@ -123,15 +138,40 @@ function renderTabla(filtro = '') {
                         <div><i class="ph ph-globe" style="color: #0ea5e9;"></i> ${ipTxt}</div>
                         <div><i class="ph ph-cpu"></i> ${macTxt}</div>
                     </td>
-                    <td>${estadoHtml}</td>
+                    <td>
+                        ${estadoHtml}
+                        <div style="margin-top:5px;">${pagoBadge}</div>
+                    </td>
                     <td style="display:flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                        ${btnHtml} 
+                        ${btnHtml}
                         ${extraBtns}
                         ${deleteBtn}
                     </td>
                 </tr>
             `;
         });
+    }
+}
+
+// Marcar pago del mes manualmente
+async function marcarPagado(id) {
+    const c = clientesCache.find(x => x.id == id);
+    if (!c) return;
+    if (!confirm(`¿Confirmar que ${c.nombre} ya canceló el mes en curso?`)) return;
+
+    try {
+        const req = await fetch(`/api/mikrotik/clientes/${id}/pago-mes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const res = await req.json();
+        if (res.success) {
+            cargarClientes();
+        } else {
+            alert('Error: ' + res.error);
+        }
+    } catch (e) {
+        alert('Error de conexión.');
     }
 }
 
@@ -477,6 +517,8 @@ function abrirConfigCliente(id) {
     document.getElementById('confDiaCobranza').value = dia_cobranza;
     document.getElementById('confAutoSuspension').checked = auto_suspension_val;
     document.getElementById('confCelular').value = celular || '';
+    document.getElementById('confGrupoPago').value = c.grupo_pago || 'mensual';
+    document.getElementById('confSaldoPendiente').value = c.saldo_pendiente || '';
     
     // El campo de tipo date espera YYYY-MM-DD
     if (fecha_nacimiento && fecha_nacimiento !== 'null') {
@@ -504,14 +546,18 @@ async function guardarConfigCliente(e) {
     const celular = document.getElementById('confCelular').value;
     const fecha_nacimiento = document.getElementById('confFechaNacimiento').value;
     const sector_id = document.getElementById('confSector').value;
-    
+    const grupo_pago = document.getElementById('confGrupoPago').value;
+    const saldo_pendiente = document.getElementById('confSaldoPendiente').value;
+
     const bodyArgs = {
         nombre: nombre || 'Sin Nombre',
         auto_suspension: auto_suspension,
         dia_cobranza: dia_cobranza,
         celular: celular || null,
         fecha_nacimiento: fecha_nacimiento || null,
-        sector_id: (sector_id !== '' && sector_id !== 'nuevo_sector') ? parseInt(sector_id) : null
+        sector_id: (sector_id !== '' && sector_id !== 'nuevo_sector') ? parseInt(sector_id) : null,
+        grupo_pago: grupo_pago || 'mensual',
+        saldo_pendiente: saldo_pendiente !== '' ? parseFloat(saldo_pendiente) : null
     };
 
     try {

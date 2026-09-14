@@ -370,7 +370,7 @@ const obtenerDeudas = async (req, res) => {
  */
 const toggleCorteAutomatico = async (req, res) => {
     const { id } = req.params;
-    const { nombre, auto_suspension, dia_cobranza, celular, fecha_nacimiento, sector_id } = req.body;
+    const { nombre, auto_suspension, dia_cobranza, celular, fecha_nacimiento, sector_id, grupo_pago, saldo_pendiente } = req.body;
 
     try {
         let sql = `UPDATE clientes_internet SET auto_suspension = ?`;
@@ -396,6 +396,14 @@ const toggleCorteAutomatico = async (req, res) => {
         if (sector_id !== undefined) {
             sql += `, sector_id = ?`;
             params.push(sector_id || null);
+        }
+        if (grupo_pago !== undefined) {
+            sql += `, grupo_pago = ?`;
+            params.push(grupo_pago || 'mensual');
+        }
+        if (saldo_pendiente !== undefined) {
+            sql += `, saldo_pendiente = ?`;
+            params.push(saldo_pendiente !== null ? parseFloat(saldo_pendiente) : null);
         }
 
         sql += ` WHERE id = ?`;
@@ -637,6 +645,35 @@ const procesarPromesasVencidas = async () => {
     }
 };
 
+/**
+ * 13. Marcar pago del mes actual manualmente
+ */
+const marcarPagoMes = async (req, res) => {
+    const { id } = req.params;
+    try {
+        await runAsync(
+            "UPDATE clientes_internet SET estado_pago_mes = 'pagado', fecha_ultimo_pago = CURRENT_DATE WHERE id = ?",
+            [id]
+        );
+        res.json({ success: true, message: 'Pago del mes registrado.' });
+    } catch (error) {
+        console.error('Error marcando pago:', error);
+        res.status(500).json({ success: false, error: 'Error al registrar pago.' });
+    }
+};
+
+/**
+ * 14. CRON: Resetear estado_pago_mes el día 1 de cada mes
+ */
+const resetearPagosMes = async () => {
+    try {
+        await runAsync("UPDATE clientes_internet SET estado_pago_mes = 'pendiente' WHERE estado_pago_mes = 'pagado'");
+        console.log('[CRON] Estado de pago mensual reseteado para todos los clientes.');
+    } catch (error) {
+        console.error('[CRON] Error reseteando pagos del mes:', error);
+    }
+};
+
 module.exports = {
     getClientes,
     testConnection,
@@ -650,5 +687,7 @@ module.exports = {
     activarLibre,
     suspenderLibre,
     promesaPago,
-    procesarPromesasVencidas
+    procesarPromesasVencidas,
+    marcarPagoMes,
+    resetearPagosMes
 };
