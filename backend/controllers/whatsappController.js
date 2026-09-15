@@ -16,7 +16,7 @@ const initializeWPClient = () => {
         authStrategy: new LocalAuth(),
         puppeteer: {
             headless: true,
-            executablePath: '/usr/bin/chromium-browser',
+            executablePath: '/usr/bin/google-chrome-stable',
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
