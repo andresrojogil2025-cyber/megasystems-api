@@ -1,5 +1,5 @@
 // URL base de la API
-const API_URL = 'http://localhost:3050/api/whatsapp';
+const API_URL = '/api/whatsapp';
 
 let pollingInterval = null;
 
