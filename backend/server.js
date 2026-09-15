@@ -4,7 +4,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 
 // Cargar variables de entorno ANTES de cualquier uso
-dotenv.config();
+dotenv.config({ override: true });
 
 const cron = require('node-cron');
 
