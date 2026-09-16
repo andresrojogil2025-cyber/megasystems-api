@@ -230,9 +230,16 @@
             <div>
                 <h2>Cobranza de Internet ISP</h2>
             </div>
-            <button class="btn-sync" onclick="sincronizarMikrotik()">
-                <i class="ph ph-arrows-clockwise"></i> Sincronizar Clientes de MikroTik
-            </button>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <select id="zonaImportSelect" class="form-control" style="width:140px; font-size:0.85rem;">
+                    <option value="escuque">Escuque</option>
+                    <option value="carvajal">Carvajal</option>
+                    <option value="beatriz">Beatriz</option>
+                </select>
+                <button class="btn-sync" onclick="sincronizarMikrotik()">
+                    <i class="ph ph-arrows-clockwise"></i> Sincronizar MikroTik
+                </button>
+            </div>
         </header>
 
         <div class="page-content">
@@ -433,6 +440,14 @@
                     <label>Saldo Pendiente ($)</label>
                     <input type="number" step="0.01" min="0" id="confSaldoPendiente" class="form-control" placeholder="0.00">
                 </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+                <label>Zona ISP</label>
+                <select id="confZona" class="form-control">
+                    <option value="escuque">Alto de Escuque</option>
+                    <option value="carvajal">Carvajal</option>
+                    <option value="beatriz">Beatriz</option>
+                </select>
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">

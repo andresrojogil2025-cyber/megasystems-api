@@ -1,6 +1,12 @@
 // Variables Globales
 let clientesCache = [];
 
+const ZONA_LABELS = {
+    escuque:  { label: 'Escuque',  color: '#0369a1', bg: '#e0f2fe' },
+    carvajal: { label: 'Carvajal', color: '#166534', bg: '#dcfce7' },
+    beatriz:  { label: 'Beatriz',  color: '#6b21a8', bg: '#f3e8ff' }
+};
+
 // API URL (Relativa o absoluta dependiendo de cómo está desplegado)
 const API_URL = '/api/mikrotik';
 const WP_URL = '/api/whatsapp';
@@ -84,6 +90,10 @@ function renderTabla(filtro = '') {
                 ? `<span class="status-badge activo"><i class="ph ph-check-circle"></i> Activo</span>`
                 : `<span class="status-badge suspendido"><i class="ph ph-warning-circle"></i> Suspendido</span>`;
 
+            // Badge de zona
+            const zInfo = ZONA_LABELS[c.zona] || ZONA_LABELS.escuque;
+            const zonaBadge = `<span style="font-size:0.70rem; background:${zInfo.bg}; color:${zInfo.color}; padding:1px 7px; border-radius:10px; font-weight:600; margin-right:4px;">${zInfo.label}</span>`;
+
             // Badge de pago del mes
             const grupoBadge = c.grupo_pago === 'quincenal'
                 ? `<div style="font-size:0.72rem; color:#7c3aed; margin-top:3px;"><i class="ph ph-calendar"></i> Paga 15-20</div>`
@@ -128,7 +138,7 @@ function renderTabla(filtro = '') {
             tbody.innerHTML += `
                 <tr>
                     <td style="font-weight: 500;">
-                        ${c.nombre}
+                        ${zonaBadge}${c.nombre}
                         ${grupoBadge}
                         ${saldoPendiente}
                         ${convenioHtml}
@@ -177,21 +187,25 @@ async function marcarPagado(id) {
 
 // 2. Sincronizar clientes desde el Router MikroTik
 async function sincronizarMikrotik() {
-    if (!confirm('Esta acción leerá todos los equipos y colas de tu MikroTik y actualizará la base de datos de Megasystems. ¿Deseas continuar?')) return;
+    const zona = document.getElementById('zonaImportSelect')
+        ? document.getElementById('zonaImportSelect').value
+        : 'escuque';
 
-    mostrarCargaPantalla('Conectando a MikroTik y sincronizando datos...');
+    if (!confirm(`¿Sincronizar clientes de la zona "${zona}" desde MikroTik?`)) return;
+
+    mostrarCargaPantalla(`Conectando a MikroTik [${zona}] y sincronizando datos...`);
     try {
-        const respuesta = await fetch(`${API_URL}/importar`);
+        const respuesta = await fetch(`${API_URL}/importar?zona=${zona}`);
         const json = await respuesta.json();
-        
+
         if (json.success) {
             alert(`✅ ${json.message}`);
-            await cargarClientes(); // Recargar la tabla
+            await cargarClientes();
         } else {
             alert(`⚠️ Hubo un problema: ${json.error}`);
         }
     } catch (err) {
-        alert('❌ Error de comunicación con el Backend. Revisa que el servidor Node esté corriendo.');
+        alert('❌ Error de comunicación con el Backend.');
     } finally {
         ocultarCargaPantalla();
     }
@@ -519,6 +533,7 @@ function abrirConfigCliente(id) {
     document.getElementById('confCelular').value = celular || '';
     document.getElementById('confGrupoPago').value = c.grupo_pago || 'mensual';
     document.getElementById('confSaldoPendiente').value = c.saldo_pendiente || '';
+    document.getElementById('confZona').value = c.zona || 'escuque';
     
     // El campo de tipo date espera YYYY-MM-DD
     if (fecha_nacimiento && fecha_nacimiento !== 'null') {
@@ -548,6 +563,7 @@ async function guardarConfigCliente(e) {
     const sector_id = document.getElementById('confSector').value;
     const grupo_pago = document.getElementById('confGrupoPago').value;
     const saldo_pendiente = document.getElementById('confSaldoPendiente').value;
+    const zona = document.getElementById('confZona').value;
 
     const bodyArgs = {
         nombre: nombre || 'Sin Nombre',
@@ -557,7 +573,8 @@ async function guardarConfigCliente(e) {
         fecha_nacimiento: fecha_nacimiento || null,
         sector_id: (sector_id !== '' && sector_id !== 'nuevo_sector') ? parseInt(sector_id) : null,
         grupo_pago: grupo_pago || 'mensual',
-        saldo_pendiente: saldo_pendiente !== '' ? parseFloat(saldo_pendiente) : null
+        saldo_pendiente: saldo_pendiente !== '' ? parseFloat(saldo_pendiente) : null,
+        zona: zona || 'escuque'
     };
 
     try {
