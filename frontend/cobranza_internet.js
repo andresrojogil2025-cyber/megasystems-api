@@ -48,9 +48,12 @@ function renderTabla(filtro = '') {
     tbody.innerHTML = '';
 
     let busqueda = clientesCache;
+    if (window.filtroZonaActual && window.filtroZonaActual !== 'todas') {
+        busqueda = busqueda.filter(c => c.zona === window.filtroZonaActual);
+    }
     if (filtro) {
-        busqueda = clientesCache.filter(c => 
-            c.nombre.toLowerCase().includes(filtro.toLowerCase()) || 
+        busqueda = busqueda.filter(c =>
+            c.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
             (c.ip_address && c.ip_address.includes(filtro)) ||
             (c.plan_mikrotik && c.plan_mikrotik.toLowerCase().includes(filtro.toLowerCase()))
         );
@@ -221,7 +224,27 @@ function filtrarTabla() {
 window.filtroEstadoActual = 'todos';
 function setFiltroEstado(estado) {
     window.filtroEstadoActual = estado;
-    filtrarTabla(); // Re-renderizar
+    filtrarTabla();
+}
+
+window.filtroZonaActual = 'todas';
+function setFiltroZona(zona) {
+    window.filtroZonaActual = zona;
+    // Actualizar estilo de botones
+    ['todas', 'escuque', 'carvajal', 'beatriz'].forEach(z => {
+        const btn = document.getElementById(`btnZona-${z}`);
+        if (!btn) return;
+        if (z === zona) {
+            const colores = { todas: '#0f172a', escuque: '#0369a1', carvajal: '#166534', beatriz: '#6b21a8' };
+            btn.style.background = colores[z];
+            btn.style.color = '#fff';
+        } else {
+            btn.style.background = '#fff';
+            const colores = { todas: '#374151', escuque: '#0369a1', carvajal: '#166534', beatriz: '#6b21a8' };
+            btn.style.color = colores[z];
+        }
+    });
+    filtrarTabla();
 }
 
 // 3. Suspender Internet (Cortar servicio)

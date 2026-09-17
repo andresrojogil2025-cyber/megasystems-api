@@ -278,6 +278,12 @@
             <div class="table-panel">
                 <div class="toolbar">
                     <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre, IP o plan..." onkeyup="filtrarTabla()">
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button id="btnZona-todas" onclick="setFiltroZona('todas')" style="padding:6px 14px; border-radius:20px; border:1px solid #cbd5e1; background:#0f172a; color:#fff; font-size:0.82rem; font-weight:600; cursor:pointer;">Todas</button>
+                        <button id="btnZona-escuque" onclick="setFiltroZona('escuque')" style="padding:6px 14px; border-radius:20px; border:1px solid #bae6fd; background:#fff; color:#0369a1; font-size:0.82rem; font-weight:600; cursor:pointer;">Escuque</button>
+                        <button id="btnZona-carvajal" onclick="setFiltroZona('carvajal')" style="padding:6px 14px; border-radius:20px; border:1px solid #bbf7d0; background:#fff; color:#166534; font-size:0.82rem; font-weight:600; cursor:pointer;">Carvajal</button>
+                        <button id="btnZona-beatriz" onclick="setFiltroZona('beatriz')" style="padding:6px 14px; border-radius:20px; border:1px solid #e9d5ff; background:#fff; color:#6b21a8; font-size:0.82rem; font-weight:600; cursor:pointer;">Beatriz</button>
+                    </div>
                 </div>
                 
                 <table class="data-table">
