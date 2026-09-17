@@ -50,6 +50,30 @@ const catalogoController = {
         }
     },
 
+    // Actualizar ítem
+    update: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { tipo, nombre, descripcion, precio_usd, stock } = req.body;
+
+            if (!tipo || !nombre || isNaN(precio_usd)) {
+                return res.status(400).json({ error: 'Faltan datos obligatorios' });
+            }
+
+            const finalStock = tipo === 'servicio' ? null : (parseInt(stock) || 0);
+
+            await db.runAsync(
+                'UPDATE catalogo SET tipo = ?, nombre = ?, descripcion = ?, precio_usd = ?, stock = ? WHERE id = ?',
+                [tipo, nombre, descripcion, parseFloat(precio_usd), finalStock, id]
+            );
+
+            res.json({ success: true, message: 'Ítem actualizado' });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Error al actualizar el item' });
+        }
+    },
+
     // Eliminar Lógico
     delete: async (req, res) => {
         try {

@@ -183,6 +183,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    window.updatePrice = (id, elm) => {
+        const item = currentItems.find(i => i.catalogo_id === id);
+        if (item) {
+            let val = parseFloat(elm.value);
+            if (isNaN(val) || val < 0) val = 0;
+            item.precio_usd = val;
+            renderTable();
+        }
+    };
+
     window.deleteItem = (id) => {
         currentItems = currentItems.filter(i => i.catalogo_id !== id);
         renderTable();
@@ -208,8 +218,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             tr.innerHTML = `
                 <td><strong>${item.nombre}</strong></td>
                 <td>
-                    $${formatVez(item.precio_usd)} <br>
-                    <small style="color:var(--color-secondary); font-size: 0.8rem;">Bs. ${formatVez(priceVes)}</small>
+                    <input type="number" step="0.01" min="0" value="${item.precio_usd}"
+                           onchange="updatePrice(${item.catalogo_id}, this)"
+                           style="width:75px; padding:4px 6px; border:1px solid #d1d5db; border-radius:5px; font-weight:600; color:var(--color-secondary);">
+                    <br><small style="color:#9ca3af; font-size:0.78rem;">Bs. ${formatVez(priceVes)}</small>
                 </td>
                 <td><input type="number" class="qty" value="${item.cantidad}" onchange="updateQty(${item.catalogo_id}, this)"></td>
                 <td style="font-weight:600;">

@@ -34,6 +34,16 @@
         .stock-tag { font-family: monospace; font-size: 0.9rem; background: #f3f4f6; padding: 2px 6px; border-radius: 4px;}
 
         .btn-danger { color: #ef4444; background: none; border: none; cursor: pointer; font-size: 1.2rem; }
+        .btn-edit { color: #2563eb; background: none; border: none; cursor: pointer; font-size: 1.2rem; margin-right: 4px; }
+
+        /* Modal editar */
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; justify-content:center; align-items:center; }
+        .modal-overlay.open { display:flex; }
+        .modal-box { background:#fff; border-radius:12px; padding:28px; width:420px; max-width:95vw; box-shadow:0 8px 30px rgba(0,0,0,0.15); }
+        .modal-box h3 { margin-bottom:18px; color:var(--color-text-main); }
+        .modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+        .btn-primary { background:var(--color-primary); color:#fff; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; }
+        .btn-secondary { background:#f3f4f6; color:#374151; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; }
 
         @media (max-width: 992px) {
             .layout-grid { grid-template-columns: 1fr; }
@@ -111,6 +121,43 @@
                         <tr><td colspan="5" style="text-align:center;">Cargando catálogo...</td></tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Ítem -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-box">
+            <h3><i class="ph ph-pencil-simple"></i> Editar Ítem</h3>
+            <input type="hidden" id="editId">
+            <div class="form-group">
+                <label>Tipo</label>
+                <select id="editTipo" onchange="toggleEditStock()">
+                    <option value="producto">Producto (Tangible)</option>
+                    <option value="servicio">Servicio (Intangible)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" id="editNombre">
+            </div>
+            <div class="form-group">
+                <label>Descripción</label>
+                <textarea id="editDescripcion" rows="2"></textarea>
+            </div>
+            <div style="display:flex; gap:15px;">
+                <div class="form-group" style="flex:1;">
+                    <label>Precio (USD)</label>
+                    <input type="number" step="0.01" id="editPrecio">
+                </div>
+                <div class="form-group" id="editStockGroup" style="flex:1;">
+                    <label>Stock</label>
+                    <input type="number" id="editStock">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeEditModal()">Cancelar</button>
+                <button class="btn-primary" onclick="saveEdit()">Guardar Cambios</button>
             </div>
         </div>
     </div>

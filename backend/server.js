@@ -62,6 +62,7 @@ app.get('/api/entidades/:id/facturas', entidadesController.getInvoices);
 
 app.get('/api/catalogo', catalogoController.getAll);
 app.post('/api/catalogo', catalogoController.create);
+app.put('/api/catalogo/:id', catalogoController.update);
 app.delete('/api/catalogo/:id', catalogoController.delete);
 
 app.get('/api/usuarios', usuariosController.getAll);

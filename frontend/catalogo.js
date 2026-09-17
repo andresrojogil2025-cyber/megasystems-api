@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
             catalogBody.innerHTML = '';
             
             if (json.data && json.data.length > 0) {
+                catalogCache = json.data;
                 json.data.forEach(item => {
                     const isServicio = item.tipo === 'servicio';
                     const stockDisplay = isServicio ? '<span style="color:#9ca3af; font-style:italic;">N/A</span>' : `<span class="stock-tag">${item.stock}</span>`;
@@ -36,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td class="price-tag">$${formatVez(parseFloat(item.precio_usd))}</td>
                         <td>${stockDisplay}</td>
                         <td>
+                            <button class="btn-edit" onclick="editItem(${item.id})" title="Editar"><i class="ph ph-pencil-simple"></i></button>
                             <button class="btn-danger" onclick="deleteItem(${item.id})" title="Inhabilitar"><i class="ph ph-trash"></i></button>
                         </td>
                     `;
@@ -84,7 +86,57 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 3. Eliminar Lógico (Inhabilitar)
+    // 3. Editar ítem
+    let catalogCache = [];
+
+    window.editItem = (id) => {
+        const item = catalogCache.find(i => i.id === id);
+        if (!item) return;
+        document.getElementById('editId').value = item.id;
+        document.getElementById('editTipo').value = item.tipo;
+        document.getElementById('editNombre').value = item.nombre;
+        document.getElementById('editDescripcion').value = item.descripcion || '';
+        document.getElementById('editPrecio').value = item.precio_usd;
+        document.getElementById('editStock').value = item.stock || '';
+        toggleEditStock();
+        document.getElementById('editModal').classList.add('open');
+    };
+
+    window.closeEditModal = () => document.getElementById('editModal').classList.remove('open');
+
+    window.toggleEditStock = () => {
+        const es_servicio = document.getElementById('editTipo').value === 'servicio';
+        document.getElementById('editStockGroup').style.display = es_servicio ? 'none' : 'block';
+    };
+
+    window.saveEdit = async () => {
+        const id = document.getElementById('editId').value;
+        const payload = {
+            tipo: document.getElementById('editTipo').value,
+            nombre: document.getElementById('editNombre').value,
+            descripcion: document.getElementById('editDescripcion').value,
+            precio_usd: document.getElementById('editPrecio').value,
+            stock: document.getElementById('editStock').value
+        };
+        try {
+            const res = await fetch(`${API_URL}/catalogo/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                closeEditModal();
+                loadCatalog();
+            } else {
+                alert(data.error || 'Error al guardar');
+            }
+        } catch (e) {
+            alert('Error de red');
+        }
+    };
+
+    // 4. Eliminar Lógico (Inhabilitar)
     window.deleteItem = async (id) => {
         if(!confirm('¿Inhabilitar este ítem del catálogo activo?')) return;
         
