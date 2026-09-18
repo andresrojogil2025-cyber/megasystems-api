@@ -307,7 +307,7 @@ async function previewFactura(input) {
         const r = await fetch('/api/compras/parse-factura', { method: 'POST', body: fd });
         const d = await r.json();
         if (d.items && d.items.length > 0) {
-            const metodos = { vision: 'Google Vision', claude: 'IA (Claude)', pdf: 'PDF', ocr: 'OCR' };
+            const metodos = { gemini: 'Gemini IA', vision: 'Google Vision', claude: 'IA (Claude)', pdf: 'PDF', ocr: 'OCR' };
             const tipo = metodos[d.metodo] || d.metodo;
             badge.textContent = `${d.items.length} ítems detectados via ${tipo} — revisa y corrige si es necesario`;
             badge.className = 'badge-auto';

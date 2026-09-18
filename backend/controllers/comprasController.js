@@ -46,47 +46,77 @@ const uploadMemory = multer({
     }
 });
 
+function parseNum(str) {
+    if (!str) return NaN;
+    // Maneja "1.200,50" y "1,200.50" y "1200.50" y "1200,50"
+    str = str.trim();
+    const hasComa = str.includes(',');
+    const hasPunto = str.includes('.');
+    if (hasComa && hasPunto) {
+        // Quien viene último es el decimal
+        if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
+            str = str.replace(/\./g, '').replace(',', '.');
+        } else {
+            str = str.replace(/,/g, '');
+        }
+    } else if (hasComa) {
+        str = str.replace(',', '.');
+    }
+    return parseFloat(str);
+}
+
 function extraerItemsDeTexto(text) {
     const items = [];
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 8);
-    const skipWords = /^(descripci|codigo|cant|precio|total|sub.total|iva|base|fecha|cliente|rif|nit|pag|factura|presupuesto|nota|condici|vendedor|dire|telef|forma|cuota|observa|firma|recib|moneda|tasa|bolivar|usd|dolar)/i;
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 5);
+    const skipLine = /^(descripci|c[oó]dig|cant\.?$|precio|total|sub[\s-]?total|iva|base\s*imp|fecha|cliente|rif|nit|p[aá]g|factura\s*n|presupuesto\s*n|nota\s*de|condici|vendedor|direcci|tel[eé]f|forma\s*de\s*pago|cuota|observa|firma|recib|moneda|tasa|bol[ií]var|descuento|tipo\s*de|precios\s*sujeto)/i;
 
     for (const line of lines) {
-        if (skipWords.test(line)) continue;
-        if (/^[\d\s.,\-\+%$€\/]+$/.test(line)) continue;
-        if (line.split(' ').filter(t => /[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(t)).length < 2) continue;
+        if (skipLine.test(line)) continue;
+        // Línea solo de números/símbolos → saltar
+        if (/^[\d\s.,\-\+%$€\/:()]+$/.test(line)) continue;
+        // Menos de 2 palabras con letras → probablemente no es un producto
+        const palabras = line.split(/\s+/).filter(t => /[a-zA-ZáéíóúÁÉÍÓÚñÑ]{2,}/.test(t));
+        if (palabras.length < 2) continue;
 
         const tokens = line.split(/\s+/);
-
-        // Buscar primer token con formato precio: dígitos + coma/punto + 2 decimales
-        let priceIdx = -1;
-        for (let i = 1; i < tokens.length; i++) {
-            if (/^\d[\d.]*,\d{2}$/.test(tokens[i]) || /^\d+\.\d{2}$/.test(tokens[i])) {
-                priceIdx = i;
-                break;
+        // Encontrar todos los tokens numéricos (precios o cantidades)
+        const numTokens = [];
+        for (let i = 0; i < tokens.length; i++) {
+            if (/^\d[\d.,]*$/.test(tokens[i]) && tokens[i].length >= 1) {
+                numTokens.push({ idx: i, val: parseNum(tokens[i]), raw: tokens[i] });
             }
         }
-        if (priceIdx < 2) continue;
+        if (numTokens.length < 2) continue;
 
-        // Token anterior al precio debe ser cantidad (entero 1-10000)
-        const qtyToken = tokens[priceIdx - 1];
-        if (!/^\d{1,5}$/.test(qtyToken)) continue;
-        const qty = parseInt(qtyToken);
-        if (qty < 1 || qty > 10000) continue;
+        // Estrategia: la cantidad suele ser un entero pequeño (1-999)
+        // y el precio viene justo después como número decimal
+        let qty = null, precio = null, qtyIdx = -1;
 
-        const priceStr = tokens[priceIdx].replace(/\./g, '').replace(',', '.');
-        const precio = parseFloat(priceStr);
-        if (isNaN(precio) || precio <= 0) continue;
+        for (let k = 0; k < numTokens.length - 1; k++) {
+            const t = numTokens[k];
+            const next = numTokens[k + 1];
+            // Qty: entero sin decimales, entre 1 y 9999
+            if (/^\d{1,4}$/.test(t.raw) && t.val >= 1 && t.val <= 9999) {
+                // Siguiente debe ser precio (tiene decimales o es mayor)
+                if (!isNaN(next.val) && next.val > 0) {
+                    qty = t.val;
+                    precio = next.val;
+                    qtyIdx = t.idx;
+                    break;
+                }
+            }
+        }
+        if (!qty || !precio) continue;
 
-        // Descripción = todo antes de la cantidad
-        const descTokens = tokens.slice(0, priceIdx - 1);
-        const descStart = /^\d{3,8}$/.test(descTokens[0]) ? 1 : 0;
+        // Descripción = tokens antes de la cantidad (saltando código numérico inicial)
+        const descTokens = tokens.slice(0, qtyIdx);
+        const descStart = /^\d{2,8}$/.test(descTokens[0]) ? 1 : 0;
         const desc = descTokens.slice(descStart).join(' ').trim();
-        if (desc.length < 3) continue;
+        if (desc.length < 3 || !/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(desc)) continue;
 
         items.push({ descripcion: desc, cantidad: qty, costo_usd: precio });
     }
-    return items.slice(0, 60);
+    return items.slice(0, 80);
 }
 
 const genCodigo = async () => {
@@ -104,7 +134,40 @@ const comprasController = {
         if (!req.file) return res.json({ success: true, items: [], metodo: 'ninguno' });
         const mime = req.file.mimetype;
         try {
-            // ── Opción 1: Google Cloud Vision (imágenes) ──────────────────────
+            // ── Opción 1: Google Gemini Vision (mejor precisión para imágenes) ──
+            const geminiKey = process.env.GOOGLE_GEMINI_KEY || process.env.GOOGLE_CLOUD_VISION_KEY;
+            if (geminiKey && mime.startsWith('image/')) {
+                try {
+                    const base64 = req.file.buffer.toString('base64');
+                    const gRes = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [
+                                    { inline_data: { mime_type: mime, data: base64 } },
+                                    { text: 'Extrae TODOS los productos/ítems de esta factura o presupuesto. Devuelve ÚNICAMENTE un JSON array sin texto adicional antes ni después:\n[{"descripcion":"nombre exacto del producto","cantidad":1,"costo_usd":0.00}]\nSi el precio está en bolívares, ponlo en costo_usd como si fueran USD. Si no hay precio usa 0. Incluye TODOS los ítems, uno por elemento del array.' }
+                                ]}],
+                                generationConfig: { temperature: 0, maxOutputTokens: 2048 }
+                            })
+                        }
+                    );
+                    const gData = await gRes.json();
+                    const rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    if (rawText) {
+                        const jsonStr = rawText.trim().replace(/^```json\s*/m, '').replace(/\s*```$/m, '').trim();
+                        const parsed = JSON.parse(jsonStr);
+                        if (Array.isArray(parsed) && parsed.length) {
+                            return res.json({ success: true, items: parsed, metodo: 'gemini' });
+                        }
+                    }
+                } catch (eg) {
+                    console.error('[Gemini Vision]', eg.message);
+                }
+            }
+
+            // ── Opción 2: Google Cloud Vision (imágenes) ──────────────────────
             if (process.env.GOOGLE_CLOUD_VISION_KEY && mime.startsWith('image/')) {
                 try {
                     const base64 = req.file.buffer.toString('base64');
@@ -132,14 +195,14 @@ const comprasController = {
                 }
             }
 
-            // ── Opción 2: pdf-parse para PDFs con texto ───────────────────────
+            // ── Opción 3: pdf-parse para PDFs con texto ───────────────────────
             if (mime === 'application/pdf' && pdfParse) {
                 const data = await pdfParse(req.file.buffer);
                 const items = extraerItemsDeTexto(data.text);
                 return res.json({ success: true, items, metodo: 'pdf' });
             }
 
-            // ── Opción 3: Tesseract OCR (fallback sin API key) ────────────────
+            // ── Opción 4: Tesseract OCR (fallback sin API key) ────────────────
             if (mime.startsWith('image/') && Tesseract) {
                 const result = await Tesseract.recognize(req.file.buffer, 'spa+eng', { logger: () => {} });
                 const items = extraerItemsDeTexto(result.data.text);
