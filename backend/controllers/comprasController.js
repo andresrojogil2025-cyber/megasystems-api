@@ -104,29 +104,31 @@ const comprasController = {
         if (!req.file) return res.json({ success: true, items: [], metodo: 'ninguno' });
         const mime = req.file.mimetype;
         try {
-            // ── Opción 1: Claude Vision (mejor precisión) ─────────────────────
-            if (Anthropic && process.env.ANTHROPIC_API_KEY && mime.startsWith('image/')) {
+            // ── Opción 1: Google Cloud Vision (imágenes) ──────────────────────
+            if (process.env.GOOGLE_CLOUD_VISION_KEY && mime.startsWith('image/')) {
                 try {
-                    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
                     const base64 = req.file.buffer.toString('base64');
-                    const msg = await client.messages.create({
-                        model: 'claude-haiku-4-5-20251001',
-                        max_tokens: 2048,
-                        messages: [{
-                            role: 'user',
-                            content: [
-                                { type: 'image', source: { type: 'base64', media_type: mime, data: base64 } },
-                                { type: 'text', text: 'Extrae todos los ítems/productos de esta factura comercial. Devuelve ÚNICAMENTE un JSON array con este formato exacto, sin texto adicional antes ni después:\n[{"descripcion":"nombre del producto","cantidad":1,"costo_usd":0.00}]\nSi el precio está en bolívares o no aparece, pon 0. Incluye todos los productos/ítems de la factura.' }
-                            ]
-                        }]
-                    });
-                    const raw = msg.content[0].text.trim().replace(/^```json|```$/gm, '').trim();
-                    const items = JSON.parse(raw);
-                    if (Array.isArray(items) && items.length) {
-                        return res.json({ success: true, items, metodo: 'claude' });
+                    const visionRes = await fetch(
+                        `https://vision.googleapis.com/v1/images:annotate?key=${process.env.GOOGLE_CLOUD_VISION_KEY}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                requests: [{
+                                    image: { content: base64 },
+                                    features: [{ type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 }]
+                                }]
+                            })
+                        }
+                    );
+                    const visionData = await visionRes.json();
+                    const text = visionData.responses?.[0]?.fullTextAnnotation?.text || '';
+                    if (text.length > 20) {
+                        const items = extraerItemsDeTexto(text);
+                        return res.json({ success: true, items, metodo: 'vision' });
                     }
                 } catch (e2) {
-                    console.error('[Claude Vision]', e2.message);
+                    console.error('[Google Vision]', e2.message);
                 }
             }
 
@@ -137,7 +139,7 @@ const comprasController = {
                 return res.json({ success: true, items, metodo: 'pdf' });
             }
 
-            // ── Opción 3: Tesseract OCR (fallback para imágenes) ──────────────
+            // ── Opción 3: Tesseract OCR (fallback sin API key) ────────────────
             if (mime.startsWith('image/') && Tesseract) {
                 const result = await Tesseract.recognize(req.file.buffer, 'spa+eng', { logger: () => {} });
                 const items = extraerItemsDeTexto(result.data.text);
