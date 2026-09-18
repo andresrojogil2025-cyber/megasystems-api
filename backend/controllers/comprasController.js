@@ -3,6 +3,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+let pdfParse;
+try { pdfParse = require('pdf-parse'); } catch (e) {}
+
 // ── Multer: imágenes y PDFs de facturas ──────────────────────────────────────
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -26,6 +29,59 @@ const upload = multer({
     }
 });
 
+// Multer en memoria para parse (no guarda archivo)
+const uploadMemory = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 25 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype !== 'application/pdf') return cb(new Error('Solo PDFs'));
+        cb(null, true);
+    }
+});
+
+function extraerItemsDeTexto(text) {
+    const items = [];
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 8);
+    const skipWords = /^(descripci|codigo|cant|precio|total|sub.total|iva|base|fecha|cliente|rif|nit|pag|factura|presupuesto|nota|condici|vendedor|dire|telef|forma|cuota|observa|firma|recib|moneda|tasa|bolivar|usd|dolar)/i;
+
+    for (const line of lines) {
+        if (skipWords.test(line)) continue;
+        if (/^[\d\s.,\-\+%$€\/]+$/.test(line)) continue;
+        if (line.split(' ').filter(t => /[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(t)).length < 2) continue;
+
+        const tokens = line.split(/\s+/);
+
+        // Buscar primer token con formato precio: dígitos + coma/punto + 2 decimales
+        let priceIdx = -1;
+        for (let i = 1; i < tokens.length; i++) {
+            if (/^\d[\d.]*,\d{2}$/.test(tokens[i]) || /^\d+\.\d{2}$/.test(tokens[i])) {
+                priceIdx = i;
+                break;
+            }
+        }
+        if (priceIdx < 2) continue;
+
+        // Token anterior al precio debe ser cantidad (entero 1-10000)
+        const qtyToken = tokens[priceIdx - 1];
+        if (!/^\d{1,5}$/.test(qtyToken)) continue;
+        const qty = parseInt(qtyToken);
+        if (qty < 1 || qty > 10000) continue;
+
+        const priceStr = tokens[priceIdx].replace(/\./g, '').replace(',', '.');
+        const precio = parseFloat(priceStr);
+        if (isNaN(precio) || precio <= 0) continue;
+
+        // Descripción = todo antes de la cantidad
+        const descTokens = tokens.slice(0, priceIdx - 1);
+        const descStart = /^\d{3,8}$/.test(descTokens[0]) ? 1 : 0;
+        const desc = descTokens.slice(descStart).join(' ').trim();
+        if (desc.length < 3) continue;
+
+        items.push({ descripcion: desc, cantidad: qty, costo_usd: precio });
+    }
+    return items.slice(0, 60);
+}
+
 const genCodigo = async () => {
     const year = new Date().getFullYear();
     const rows = await queryAsync("SELECT COUNT(*) as total FROM compras WHERE EXTRACT(YEAR FROM created_at) = ?", [year]);
@@ -35,6 +91,19 @@ const genCodigo = async () => {
 
 const comprasController = {
     upload: upload.single('factura'),
+    uploadMemoryMiddleware: uploadMemory.single('factura'),
+
+    parseFactura: async (req, res) => {
+        try {
+            if (!req.file || !pdfParse) return res.json({ success: true, items: [] });
+            const data = await pdfParse(req.file.buffer);
+            const items = extraerItemsDeTexto(data.text);
+            res.json({ success: true, items });
+        } catch (e) {
+            console.error('[parseFactura]', e.message);
+            res.json({ success: true, items: [] });
+        }
+    },
 
     getAll: async (req, res) => {
         try {

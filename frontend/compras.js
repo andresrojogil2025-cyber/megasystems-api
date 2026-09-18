@@ -263,7 +263,9 @@ async function crearProductoYAgregar() {
 }
 
 // ── Factura upload ────────────────────────────────────────────────────────────
-function previewFactura(input) {
+let facturaItems = [];
+
+async function previewFactura(input) {
     const file = input.files[0];
     if (!file) return;
     facturaFile = file;
@@ -274,12 +276,43 @@ function previewFactura(input) {
     if (file.type === 'application/pdf') {
         const url = URL.createObjectURL(file);
         box.innerHTML = `<iframe src="${url}"></iframe>`;
+
+        // Intentar extraer ítems del PDF
+        const badge = document.getElementById('parseBadge');
+        badge.textContent = 'Analizando PDF...';
+        badge.className = 'badge-manual';
+        badge.style.display = 'inline-block';
+        mostrarPanelFacturaItems([]);  // Mostrar tabla vacía inmediatamente
+
+        try {
+            const fd = new FormData();
+            fd.append('factura', file);
+            const r = await fetch('/api/compras/parse-factura', { method: 'POST', body: fd });
+            const d = await r.json();
+            if (d.items && d.items.length > 0) {
+                badge.textContent = `${d.items.length} ítems detectados automáticamente`;
+                badge.className = 'badge-auto';
+                mostrarPanelFacturaItems(d.items);
+            } else {
+                badge.textContent = 'PDF sin texto legible — ingresa los ítems manualmente';
+                badge.className = 'badge-manual';
+            }
+        } catch (e) {
+            badge.textContent = 'Ingresa los ítems manualmente';
+            badge.className = 'badge-manual';
+        }
     } else {
         const reader = new FileReader();
         reader.onload = e => {
-            box.innerHTML = `<img src="${e.target.result}" alt="Factura" onclick="abrirVisorImagen('${e.target.result}')">`;
+            const src = e.target.result;
+            box.innerHTML = `<img src="${src}" alt="Factura" onclick="abrirVisorImagen('${src}')">`;
         };
         reader.readAsDataURL(file);
+        // Para imágenes, tabla vacía manual
+        document.getElementById('parseBadge').textContent = 'Revisa la imagen e ingresa los ítems manualmente';
+        document.getElementById('parseBadge').className = 'badge-manual';
+        document.getElementById('parseBadge').style.display = 'inline-block';
+        mostrarPanelFacturaItems([]);
     }
 
     document.getElementById('uploadZone').innerHTML = `
@@ -288,6 +321,77 @@ function previewFactura(input) {
         <p style="font-size:0.8rem;color:#64748b;">Haz clic para cambiar el archivo</p>
         <input type="file" id="facturaFile" accept="image/*,.pdf" style="display:none;" onchange="previewFactura(this)">
     `;
+}
+
+// ── Spreadsheet de ítems de factura ──────────────────────────────────────────
+function mostrarPanelFacturaItems(items) {
+    facturaItems = items.length
+        ? items.map(x => ({ ...x, seleccionado: true }))
+        : [{ descripcion: '', cantidad: 1, costo_usd: 0, seleccionado: true }];
+    document.getElementById('facturaItemsPanel').style.display = 'block';
+    renderFacturaItems();
+}
+
+function renderFacturaItems() {
+    const tbody = document.getElementById('facturaItemsBody');
+    tbody.innerHTML = facturaItems.map((item, i) => `
+        <tr>
+            <td><input type="checkbox" class="fac-check" ${item.seleccionado ? 'checked' : ''} onchange="facturaItems[${i}].seleccionado=this.checked"></td>
+            <td><input type="text" value="${item.descripcion.replace(/"/g,'&quot;')}" placeholder="Descripción del producto..."
+                onchange="facturaItems[${i}].descripcion=this.value"
+                oninput="facturaItems[${i}].descripcion=this.value"></td>
+            <td><input type="number" min="1" value="${item.cantidad}"
+                onchange="facturaItems[${i}].cantidad=parseInt(this.value)||1"></td>
+            <td><input type="number" step="0.01" min="0" value="${parseFloat(item.costo_usd).toFixed(2)}"
+                onchange="facturaItems[${i}].costo_usd=parseFloat(this.value)||0"></td>
+            <td><button class="btn btn-danger btn-sm" onclick="removeFacturaRow(${i})" title="Quitar fila"><i class="ph ph-x"></i></button></td>
+        </tr>
+    `).join('');
+}
+
+function addFacturaRow() {
+    facturaItems.push({ descripcion: '', cantidad: 1, costo_usd: 0, seleccionado: true });
+    renderFacturaItems();
+    // Enfocar el último input de descripción
+    const inputs = document.querySelectorAll('#facturaItemsBody input[type=text]');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
+function removeFacturaRow(i) {
+    facturaItems.splice(i, 1);
+    if (!facturaItems.length) addFacturaRow();
+    else renderFacturaItems();
+}
+
+function toggleSelectAllFac(cb) {
+    facturaItems.forEach(x => x.seleccionado = cb.checked);
+    renderFacturaItems();
+    document.getElementById('selectAllFac').checked = cb.checked;
+}
+
+function agregarSeleccionadosACompra() {
+    const seleccionados = facturaItems.filter(x => x.seleccionado && x.descripcion.trim());
+    if (!seleccionados.length) { alert('Selecciona al menos un ítem con descripción.'); return; }
+
+    seleccionados.forEach(item => {
+        const desc = item.descripcion.trim();
+        const exist = itemsCompra.find(x => x.nombre_item.toLowerCase() === desc.toLowerCase());
+        if (exist) {
+            exist.cantidad += item.cantidad;
+        } else {
+            itemsCompra.push({
+                catalogo_id: null,
+                nombre_item: desc,
+                cantidad: item.cantidad || 1,
+                costo_usd: item.costo_usd || 0
+            });
+        }
+    });
+
+    renderItems();
+    document.getElementById('facturaItemsPanel').style.display = 'none';
+    // Scroll hacia la tabla de ítems
+    document.getElementById('itemsTable').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // ── Visor imagen ampliado ─────────────────────────────────────────────────────
@@ -322,8 +426,11 @@ function mostrarFormCompra() {
 function cancelarCompra() {
     document.getElementById('formCompraPanel').style.display = 'none';
     document.getElementById('btnNuevaCompraWrap').style.display = 'block';
+    document.getElementById('facturaItemsPanel').style.display = 'none';
+    document.getElementById('facturaPreview').style.display = 'none';
     itemsCompra = [];
     facturaFile = null;
+    facturaItems = [];
 }
 
 async function guardarCompra() {

@@ -96,6 +96,17 @@
         .prov-table th { background:#f8fafc; padding:10px 12px; text-align:left; font-size:0.82rem; color:#64748b; border-bottom:1.5px solid #e2e8f0; }
         .prov-table td { padding:10px 12px; border-bottom:1px solid #f1f5f9; font-size:0.88rem; }
 
+        /* Tabla de ítems de factura (spreadsheet) */
+        .factura-sheet { width:100%; border-collapse:collapse; }
+        .factura-sheet th { background:#fef9c3; padding:8px 10px; text-align:left; font-size:0.8rem; color:#854d0e; font-weight:700; border-bottom:2px solid #fde047; }
+        .factura-sheet td { padding:5px 6px; border-bottom:1px solid #fef3c7; vertical-align:middle; }
+        .factura-sheet input[type=text] { width:100%; min-width:160px; padding:5px 8px; border:1.5px solid #e2e8f0; border-radius:6px; font-size:0.85rem; font-family:'Inter'; }
+        .factura-sheet input[type=number] { width:72px; padding:5px 8px; border:1.5px solid #e2e8f0; border-radius:6px; font-size:0.85rem; text-align:right; font-family:'Inter'; }
+        .factura-sheet input:focus { border-color:#f59e0b; outline:none; }
+        .badge-auto { background:#dcfce7; color:#16a34a; padding:2px 10px; border-radius:12px; font-size:0.75rem; font-weight:700; }
+        .badge-manual { background:#fef9c3; color:#854d0e; padding:2px 10px; border-radius:12px; font-size:0.75rem; font-weight:700; }
+        .factura-items-panel { background:#fffbeb; border:1.5px solid #fde047; border-radius:12px; padding:16px; margin-top:14px; }
+
         @media(max-width:700px) { .form-grid, .form-grid.three { grid-template-columns:1fr; } }
     </style>
 </head>
@@ -178,7 +189,39 @@
                     <input type="file" id="facturaFile" accept="image/*,.pdf" style="display:none;" onchange="previewFactura(this)">
                 </div>
                 <div id="facturaPreview" style="display:none;" class="preview-box"></div>
-                <div id="facturaPreviewActions" style="display:none; margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+
+                <!-- Panel "tipo Excel" de ítems de la factura -->
+                <div id="facturaItemsPanel" class="factura-items-panel" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <strong style="color:#92400e;"><i class="ph ph-table"></i> Ítems de la Factura</strong>
+                            <span id="parseBadge" style="display:none;"></span>
+                        </div>
+                        <button class="btn btn-sm" style="background:#fde047;color:#78350f;" onclick="addFacturaRow()">
+                            <i class="ph ph-plus"></i> Agregar fila
+                        </button>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table class="factura-sheet">
+                            <thead>
+                                <tr>
+                                    <th style="width:32px;"><input type="checkbox" id="selectAllFac" onchange="toggleSelectAllFac(this)" checked></th>
+                                    <th>Descripción del producto</th>
+                                    <th style="width:70px;">Cantidad</th>
+                                    <th style="width:100px;">Costo USD</th>
+                                    <th style="width:32px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="facturaItemsBody"></tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <button class="btn btn-green btn-sm" onclick="agregarSeleccionadosACompra()">
+                            <i class="ph ph-arrow-fat-line-down"></i> Agregar seleccionados a la compra
+                        </button>
+                        <span style="color:#92400e; font-size:0.8rem;">Revisa y edita los valores antes de agregar.</span>
+                    </div>
+                </div>
             </div>
 
             <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
