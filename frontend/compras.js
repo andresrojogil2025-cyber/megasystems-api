@@ -272,35 +272,11 @@ async function previewFactura(input) {
 
     const box = document.getElementById('facturaPreview');
     box.style.display = 'block';
+    const badge = document.getElementById('parseBadge');
 
+    // Mostrar preview según tipo
     if (file.type === 'application/pdf') {
-        const url = URL.createObjectURL(file);
-        box.innerHTML = `<iframe src="${url}"></iframe>`;
-
-        // Intentar extraer ítems del PDF
-        const badge = document.getElementById('parseBadge');
-        badge.textContent = 'Analizando PDF...';
-        badge.className = 'badge-manual';
-        badge.style.display = 'inline-block';
-        mostrarPanelFacturaItems([]);  // Mostrar tabla vacía inmediatamente
-
-        try {
-            const fd = new FormData();
-            fd.append('factura', file);
-            const r = await fetch('/api/compras/parse-factura', { method: 'POST', body: fd });
-            const d = await r.json();
-            if (d.items && d.items.length > 0) {
-                badge.textContent = `${d.items.length} ítems detectados automáticamente`;
-                badge.className = 'badge-auto';
-                mostrarPanelFacturaItems(d.items);
-            } else {
-                badge.textContent = 'PDF sin texto legible — ingresa los ítems manualmente';
-                badge.className = 'badge-manual';
-            }
-        } catch (e) {
-            badge.textContent = 'Ingresa los ítems manualmente';
-            badge.className = 'badge-manual';
-        }
+        box.innerHTML = `<iframe src="${URL.createObjectURL(file)}"></iframe>`;
     } else {
         const reader = new FileReader();
         reader.onload = e => {
@@ -308,19 +284,41 @@ async function previewFactura(input) {
             box.innerHTML = `<img src="${src}" alt="Factura" onclick="abrirVisorImagen('${src}')">`;
         };
         reader.readAsDataURL(file);
-        // Para imágenes, tabla vacía manual
-        document.getElementById('parseBadge').textContent = 'Revisa la imagen e ingresa los ítems manualmente';
-        document.getElementById('parseBadge').className = 'badge-manual';
-        document.getElementById('parseBadge').style.display = 'inline-block';
-        mostrarPanelFacturaItems([]);
     }
 
+    // Actualizar zona de upload
     document.getElementById('uploadZone').innerHTML = `
         <i class="ph ph-check-circle" style="color:#16a34a;font-size:2rem;"></i>
         <p style="color:#16a34a;font-weight:600;">${file.name}</p>
         <p style="font-size:0.8rem;color:#64748b;">Haz clic para cambiar el archivo</p>
         <input type="file" id="facturaFile" accept="image/*,.pdf" style="display:none;" onchange="previewFactura(this)">
     `;
+
+    // Intentar extraer ítems (PDF con texto o imagen con OCR)
+    const esImagen = file.type.startsWith('image/');
+    badge.textContent = esImagen ? 'Leyendo imagen con OCR... (puede tardar unos segundos)' : 'Analizando PDF...';
+    badge.className = 'badge-manual';
+    badge.style.display = 'inline-block';
+    mostrarPanelFacturaItems([]); // Tabla vacía mientras procesa
+
+    try {
+        const fd = new FormData();
+        fd.append('factura', file);
+        const r = await fetch('/api/compras/parse-factura', { method: 'POST', body: fd });
+        const d = await r.json();
+        if (d.items && d.items.length > 0) {
+            const tipo = d.metodo === 'ocr' ? 'OCR' : 'PDF';
+            badge.textContent = `${d.items.length} ítems detectados via ${tipo} — revisa y corrige si es necesario`;
+            badge.className = 'badge-auto';
+            mostrarPanelFacturaItems(d.items);
+        } else {
+            badge.textContent = 'No se detectaron ítems — ingrésalos manualmente en la tabla';
+            badge.className = 'badge-manual';
+        }
+    } catch (e) {
+        badge.textContent = 'Error al leer el archivo — ingresa los ítems manualmente';
+        badge.className = 'badge-manual';
+    }
 }
 
 // ── Spreadsheet de ítems de factura ──────────────────────────────────────────

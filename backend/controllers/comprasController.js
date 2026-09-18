@@ -6,6 +6,9 @@ const fs = require('fs');
 let pdfParse;
 try { pdfParse = require('pdf-parse'); } catch (e) {}
 
+let Tesseract;
+try { Tesseract = require('tesseract.js'); } catch (e) {}
+
 // ── Multer: imágenes y PDFs de facturas ──────────────────────────────────────
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -29,12 +32,13 @@ const upload = multer({
     }
 });
 
-// Multer en memoria para parse (no guarda archivo)
+// Multer en memoria para parse — acepta PDF e imágenes
 const uploadMemory = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 25 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        if (file.mimetype !== 'application/pdf') return cb(new Error('Solo PDFs'));
+        const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+        if (!allowed.includes(file.mimetype)) return cb(new Error('Solo PDF o imagen'));
         cb(null, true);
     }
 });
@@ -94,11 +98,21 @@ const comprasController = {
     uploadMemoryMiddleware: uploadMemory.single('factura'),
 
     parseFactura: async (req, res) => {
+        if (!req.file) return res.json({ success: true, items: [], metodo: 'ninguno' });
         try {
-            if (!req.file || !pdfParse) return res.json({ success: true, items: [] });
-            const data = await pdfParse(req.file.buffer);
-            const items = extraerItemsDeTexto(data.text);
-            res.json({ success: true, items });
+            let text = '';
+            const mime = req.file.mimetype;
+
+            if (mime === 'application/pdf' && pdfParse) {
+                const data = await pdfParse(req.file.buffer);
+                text = data.text;
+            } else if (mime.startsWith('image/') && Tesseract) {
+                const result = await Tesseract.recognize(req.file.buffer, 'spa+eng', { logger: () => {} });
+                text = result.data.text;
+            }
+
+            const items = text ? extraerItemsDeTexto(text) : [];
+            res.json({ success: true, items, metodo: mime.startsWith('image/') ? 'ocr' : 'pdf' });
         } catch (e) {
             console.error('[parseFactura]', e.message);
             res.json({ success: true, items: [] });
