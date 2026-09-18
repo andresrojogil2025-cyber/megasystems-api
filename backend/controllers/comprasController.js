@@ -9,6 +9,9 @@ try { pdfParse = require('pdf-parse'); } catch (e) {}
 let Tesseract;
 try { Tesseract = require('tesseract.js'); } catch (e) {}
 
+let Anthropic;
+try { Anthropic = require('@anthropic-ai/sdk'); } catch (e) {}
+
 // ── Multer: imágenes y PDFs de facturas ──────────────────────────────────────
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -99,23 +102,52 @@ const comprasController = {
 
     parseFactura: async (req, res) => {
         if (!req.file) return res.json({ success: true, items: [], metodo: 'ninguno' });
+        const mime = req.file.mimetype;
         try {
-            let text = '';
-            const mime = req.file.mimetype;
-
-            if (mime === 'application/pdf' && pdfParse) {
-                const data = await pdfParse(req.file.buffer);
-                text = data.text;
-            } else if (mime.startsWith('image/') && Tesseract) {
-                const result = await Tesseract.recognize(req.file.buffer, 'spa+eng', { logger: () => {} });
-                text = result.data.text;
+            // ── Opción 1: Claude Vision (mejor precisión) ─────────────────────
+            if (Anthropic && process.env.ANTHROPIC_API_KEY && mime.startsWith('image/')) {
+                try {
+                    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+                    const base64 = req.file.buffer.toString('base64');
+                    const msg = await client.messages.create({
+                        model: 'claude-haiku-4-5-20251001',
+                        max_tokens: 2048,
+                        messages: [{
+                            role: 'user',
+                            content: [
+                                { type: 'image', source: { type: 'base64', media_type: mime, data: base64 } },
+                                { type: 'text', text: 'Extrae todos los ítems/productos de esta factura comercial. Devuelve ÚNICAMENTE un JSON array con este formato exacto, sin texto adicional antes ni después:\n[{"descripcion":"nombre del producto","cantidad":1,"costo_usd":0.00}]\nSi el precio está en bolívares o no aparece, pon 0. Incluye todos los productos/ítems de la factura.' }
+                            ]
+                        }]
+                    });
+                    const raw = msg.content[0].text.trim().replace(/^```json|```$/gm, '').trim();
+                    const items = JSON.parse(raw);
+                    if (Array.isArray(items) && items.length) {
+                        return res.json({ success: true, items, metodo: 'claude' });
+                    }
+                } catch (e2) {
+                    console.error('[Claude Vision]', e2.message);
+                }
             }
 
-            const items = text ? extraerItemsDeTexto(text) : [];
-            res.json({ success: true, items, metodo: mime.startsWith('image/') ? 'ocr' : 'pdf' });
+            // ── Opción 2: pdf-parse para PDFs con texto ───────────────────────
+            if (mime === 'application/pdf' && pdfParse) {
+                const data = await pdfParse(req.file.buffer);
+                const items = extraerItemsDeTexto(data.text);
+                return res.json({ success: true, items, metodo: 'pdf' });
+            }
+
+            // ── Opción 3: Tesseract OCR (fallback para imágenes) ──────────────
+            if (mime.startsWith('image/') && Tesseract) {
+                const result = await Tesseract.recognize(req.file.buffer, 'spa+eng', { logger: () => {} });
+                const items = extraerItemsDeTexto(result.data.text);
+                return res.json({ success: true, items, metodo: 'ocr' });
+            }
+
+            res.json({ success: true, items: [], metodo: 'ninguno' });
         } catch (e) {
             console.error('[parseFactura]', e.message);
-            res.json({ success: true, items: [] });
+            res.json({ success: true, items: [], metodo: 'error' });
         }
     },
 
