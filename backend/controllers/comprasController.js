@@ -137,33 +137,46 @@ const comprasController = {
             // ── Opción 1: Google Gemini Vision (mejor precisión para imágenes) ──
             const geminiKey = process.env.GOOGLE_GEMINI_KEY || process.env.GOOGLE_CLOUD_VISION_KEY;
             if (geminiKey && mime.startsWith('image/')) {
-                try {
-                    const base64 = req.file.buffer.toString('base64');
-                    const gRes = await fetch(
-                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${geminiKey}`,
-                        {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [{ parts: [
-                                    { inline_data: { mime_type: mime, data: base64 } },
-                                    { text: 'Extrae TODOS los productos/ítems de esta factura o presupuesto. Devuelve ÚNICAMENTE un JSON array sin texto adicional antes ni después:\n[{"descripcion":"nombre exacto del producto","cantidad":1,"costo_usd":0.00}]\nSi el precio está en bolívares, ponlo en costo_usd como si fueran USD. Si no hay precio usa 0. Incluye TODOS los ítems, uno por elemento del array.' }
-                                ]}],
-                                generationConfig: { temperature: 0, maxOutputTokens: 2048 }
-                            })
+                // Intentar primero gemini-2.0-flash (vision nativo), luego gemini-3.6-flash
+                const geminiModels = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-3.6-flash'];
+                for (const model of geminiModels) {
+                    try {
+                        const base64 = req.file.buffer.toString('base64');
+                        console.log(`[Gemini] Probando modelo ${model}, mime=${mime}, size=${req.file.buffer.length}`);
+                        const gRes = await fetch(
+                            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+                            {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    contents: [{ parts: [
+                                        { inline_data: { mime_type: mime, data: base64 } },
+                                        { text: 'Extrae TODOS los productos/ítems de esta factura o presupuesto. Devuelve ÚNICAMENTE un JSON array sin texto adicional antes ni después:\n[{"descripcion":"nombre exacto del producto","cantidad":1,"costo_usd":0.00}]\nSi el precio está en bolívares, ponlo en costo_usd como si fueran USD. Si no hay precio usa 0. Incluye TODOS los ítems, uno por elemento del array.' }
+                                    ]}],
+                                    generationConfig: { temperature: 0, maxOutputTokens: 2048 }
+                                })
+                            }
+                        );
+                        const gData = await gRes.json();
+                        console.log(`[Gemini] status=${gRes.status} candidates=${gData.candidates?.length ?? 0} error=${gData.error?.message ?? 'none'}`);
+                        if (gData.error) { console.error(`[Gemini ${model}] API error:`, gData.error.message); continue; }
+                        const rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                        console.log(`[Gemini] rawText length=${rawText.length} preview=${rawText.substring(0, 120)}`);
+                        if (rawText) {
+                            const jsonStr = rawText.trim().replace(/^```json\s*/m, '').replace(/\s*```$/m, '').trim();
+                            try {
+                                const parsed = JSON.parse(jsonStr);
+                                if (Array.isArray(parsed) && parsed.length) {
+                                    console.log(`[Gemini] OK con ${model}: ${parsed.length} items`);
+                                    return res.json({ success: true, items: parsed, metodo: 'gemini' });
+                                }
+                            } catch (parseErr) {
+                                console.error(`[Gemini ${model}] JSON.parse error:`, parseErr.message, '| preview:', jsonStr.substring(0, 150));
+                            }
                         }
-                    );
-                    const gData = await gRes.json();
-                    const rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                    if (rawText) {
-                        const jsonStr = rawText.trim().replace(/^```json\s*/m, '').replace(/\s*```$/m, '').trim();
-                        const parsed = JSON.parse(jsonStr);
-                        if (Array.isArray(parsed) && parsed.length) {
-                            return res.json({ success: true, items: parsed, metodo: 'gemini' });
-                        }
+                    } catch (eg) {
+                        console.error(`[Gemini ${model}]`, eg.message);
                     }
-                } catch (eg) {
-                    console.error('[Gemini Vision]', eg.message);
                 }
             }
 
