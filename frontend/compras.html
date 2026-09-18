@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Megasystems - Compras</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background: var(--color-bg-light); padding: 24px; font-family: 'Inter', sans-serif; }
+        .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; flex-wrap:wrap; gap:10px; }
+        .page-header h2 { color:var(--color-text-main); margin:0; }
+        .btn-back { display:flex; align-items:center; gap:8px; color:var(--color-primary); text-decoration:none; font-weight:500; }
+
+        /* Tabs */
+        .tabs { display:flex; gap:4px; background:#f1f5f9; border-radius:10px; padding:4px; margin-bottom:22px; width:fit-content; }
+        .tab-btn { padding:8px 20px; border:none; border-radius:8px; background:transparent; cursor:pointer; font-weight:600; font-size:0.88rem; color:#64748b; transition:.15s; }
+        .tab-btn.active { background:#fff; color:var(--color-primary); box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+
+        /* Panels */
+        .panel { background:#fff; border-radius:12px; padding:22px; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
+        .panel + .panel { margin-top:18px; }
+        .panel-title { font-size:1rem; font-weight:700; color:var(--color-text-main); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+
+        /* Form grid */
+        .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        .form-grid.three { grid-template-columns:1fr 1fr 1fr; }
+        .form-group { display:flex; flex-direction:column; gap:4px; }
+        .form-group.full { grid-column:1/-1; }
+        .form-group label { font-size:0.82rem; font-weight:600; color:#64748b; }
+        .form-group input, .form-group select, .form-group textarea {
+            padding:9px 12px; border:1.5px solid #e2e8f0; border-radius:8px;
+            font-family:'Inter'; font-size:0.9rem; outline:none; background:#fff;
+        }
+        .form-group input:focus, .form-group select:focus { border-color:var(--color-primary); }
+
+        /* Botones */
+        .btn { padding:9px 18px; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.88rem; font-family:'Inter'; display:inline-flex; align-items:center; gap:6px; }
+        .btn-primary { background:var(--color-primary); color:#fff; }
+        .btn-secondary { background:#f1f5f9; color:#475569; }
+        .btn-green { background:#16a34a; color:#fff; }
+        .btn-danger { background:#fee2e2; color:#dc2626; }
+        .btn-sm { padding:5px 12px; font-size:0.8rem; }
+
+        /* Tabla de ítems en la compra */
+        .items-table { width:100%; border-collapse:collapse; margin-top:10px; }
+        .items-table th { background:#f8fafc; padding:9px 12px; text-align:left; font-size:0.82rem; color:#64748b; font-weight:600; border-bottom:1.5px solid #e2e8f0; }
+        .items-table td { padding:8px 12px; border-bottom:1px solid #f1f5f9; font-size:0.88rem; vertical-align:middle; }
+        .items-table input { width:80px; padding:5px 8px; border:1.5px solid #e2e8f0; border-radius:6px; font-size:0.85rem; text-align:right; }
+        .items-table input.wide { width:120px; }
+
+        /* Buscador catálogo */
+        .search-wrap { position:relative; }
+        .search-wrap input { width:100%; padding:9px 12px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:0.9rem; font-family:'Inter'; outline:none; }
+        .search-wrap input:focus { border-color:var(--color-primary); }
+        .dropdown-list { position:absolute; top:100%; left:0; right:0; background:#fff; border:1.5px solid #e2e8f0; border-radius:8px; z-index:100; max-height:220px; overflow-y:auto; box-shadow:0 4px 16px rgba(0,0,0,0.1); }
+        .dropdown-list div { padding:10px 14px; cursor:pointer; font-size:0.88rem; border-bottom:1px solid #f1f5f9; }
+        .dropdown-list div:hover { background:#f0f9ff; }
+        .dropdown-list .crear-nuevo { color:var(--color-primary); font-weight:600; }
+
+        /* Upload zona */
+        .upload-zone { border:2px dashed #cbd5e1; border-radius:10px; padding:28px; text-align:center; cursor:pointer; transition:.2s; }
+        .upload-zone:hover { border-color:var(--color-primary); background:#f0f9ff; }
+        .upload-zone i { font-size:2rem; color:#94a3b8; }
+        .upload-zone p { margin:8px 0 0; color:#64748b; font-size:0.88rem; }
+
+        /* Preview factura */
+        .preview-box { margin-top:14px; border:1.5px solid #e2e8f0; border-radius:10px; overflow:hidden; }
+        .preview-box img { width:100%; max-height:320px; object-fit:contain; cursor:zoom-in; }
+        .preview-box iframe { width:100%; height:360px; border:none; }
+
+        /* Lista de compras */
+        .compra-card { background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; overflow:hidden; margin-bottom:12px; }
+        .compra-card-header { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; cursor:pointer; }
+        .compra-card-header:hover { background:#f8fafc; }
+        .compra-card-body { border-top:1px solid #f1f5f9; padding:16px 18px; background:#f8fafc; display:none; }
+        .compra-card-body.open { display:block; }
+        .badge-codigo { background:#e0f2fe; color:#0369a1; padding:2px 10px; border-radius:20px; font-size:0.78rem; font-weight:700; }
+
+        /* Modal genérico */
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center; }
+        .modal-overlay.open { display:flex; }
+        .modal-box { background:#fff; border-radius:14px; padding:28px; width:480px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow:0 8px 40px rgba(0,0,0,0.2); }
+        .modal-box h3 { margin:0 0 18px; font-size:1.05rem; color:var(--color-text-main); }
+        .modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+
+        /* Visor imagen ampliada */
+        .img-viewer-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:2000; justify-content:center; align-items:center; cursor:zoom-out; }
+        .img-viewer-overlay.open { display:flex; }
+        .img-viewer-overlay img { max-width:95vw; max-height:92vh; border-radius:8px; object-fit:contain; }
+        .img-viewer-close { position:absolute; top:16px; right:20px; background:#fff; border:none; border-radius:50%; width:38px; height:38px; font-size:18px; cursor:pointer; font-weight:800; }
+
+        /* Tabla proveedores */
+        .prov-table { width:100%; border-collapse:collapse; }
+        .prov-table th { background:#f8fafc; padding:10px 12px; text-align:left; font-size:0.82rem; color:#64748b; border-bottom:1.5px solid #e2e8f0; }
+        .prov-table td { padding:10px 12px; border-bottom:1px solid #f1f5f9; font-size:0.88rem; }
+
+        @media(max-width:700px) { .form-grid, .form-grid.three { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <a href="dashboard.html" class="btn-back"><i class="ph ph-arrow-left"></i> Volver al Dashboard</a>
+        <h2><i class="ph ph-shopping-cart-simple"></i> Compras y Proveedores</h2>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('compras')"><i class="ph ph-package"></i> Compras</button>
+        <button class="tab-btn" onclick="showTab('proveedores')"><i class="ph ph-buildings"></i> Proveedores</button>
+    </div>
+
+    <!-- ══════════════════════ TAB: COMPRAS ══════════════════════ -->
+    <div id="tab-compras">
+
+        <!-- Formulario nueva compra -->
+        <div class="panel" id="formCompraPanel" style="display:none;">
+            <div class="panel-title"><i class="ph ph-plus-circle"></i> Registrar Nueva Compra</div>
+
+            <div class="form-grid three" style="margin-bottom:14px;">
+                <div class="form-group">
+                    <label>Proveedor</label>
+                    <select id="cProveedorId">
+                        <option value="">Sin proveedor</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fecha de compra</label>
+                    <input type="date" id="cFecha">
+                </div>
+                <div class="form-group">
+                    <label>Nro. de factura del proveedor</label>
+                    <input type="text" id="cFactura" placeholder="F-2024-00123">
+                </div>
+                <div class="form-group full">
+                    <label>Notas</label>
+                    <textarea id="cNotas" rows="2" placeholder="Observaciones opcionales..."></textarea>
+                </div>
+            </div>
+
+            <!-- Buscador de productos del catálogo -->
+            <div class="panel-title" style="font-size:0.92rem;"><i class="ph ph-magnifying-glass"></i> Agregar Productos</div>
+            <div class="search-wrap" style="margin-bottom:12px;">
+                <input type="text" id="buscarProducto" placeholder="Buscar producto en catálogo..." oninput="buscarEnCatalogo(this.value)" autocomplete="off">
+                <div class="dropdown-list" id="catalogoDropdown" style="display:none;"></div>
+            </div>
+
+            <!-- Tabla de ítems -->
+            <table class="items-table" id="itemsTable">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th style="width:80px;">Cant.</th>
+                        <th style="width:110px;">Costo USD</th>
+                        <th style="width:110px;">Subtotal</th>
+                        <th style="width:40px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="itemsBody">
+                    <tr id="emptyItemsRow"><td colspan="5" style="text-align:center; color:#94a3b8; padding:20px;">Agrega productos usando el buscador de arriba.</td></tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" style="text-align:right; font-weight:700; padding:10px 12px;">Total USD:</td>
+                        <td style="font-weight:800; color:#16a34a; padding:10px 12px;" id="totalUSD">$0.00</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <!-- Upload factura -->
+            <div style="margin-top:18px;">
+                <div class="panel-title" style="font-size:0.92rem;"><i class="ph ph-camera"></i> Foto / Imagen de la Factura (opcional)</div>
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('facturaFile').click()">
+                    <i class="ph ph-upload-simple"></i>
+                    <p>Haz clic para subir una imagen (JPG, PNG) o PDF de la factura del proveedor</p>
+                    <input type="file" id="facturaFile" accept="image/*,.pdf" style="display:none;" onchange="previewFactura(this)">
+                </div>
+                <div id="facturaPreview" style="display:none;" class="preview-box"></div>
+                <div id="facturaPreviewActions" style="display:none; margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
+                <button class="btn btn-green" onclick="guardarCompra()"><i class="ph ph-floppy-disk"></i> Guardar Compra</button>
+                <button class="btn btn-secondary" onclick="cancelarCompra()">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- Botón nueva compra (cuando el form está oculto) -->
+        <div id="btnNuevaCompraWrap">
+            <button class="btn btn-green" onclick="mostrarFormCompra()"><i class="ph ph-plus"></i> Nueva Compra</button>
+        </div>
+
+        <!-- Historial -->
+        <div class="panel" style="margin-top:18px;">
+            <div class="panel-title"><i class="ph ph-clock-clockwise"></i> Historial de Compras</div>
+            <div id="listaCompras"><p style="color:#94a3b8; text-align:center; padding:20px;">Cargando...</p></div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ TAB: PROVEEDORES ══════════════════════ -->
+    <div id="tab-proveedores" style="display:none;">
+        <div class="panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <div class="panel-title" style="margin:0;"><i class="ph ph-buildings"></i> Proveedores</div>
+                <button class="btn btn-primary btn-sm" onclick="abrirModalProveedor()"><i class="ph ph-plus"></i> Nuevo Proveedor</button>
+            </div>
+            <div id="tablaProveedores"><p style="color:#94a3b8; text-align:center; padding:20px;">Cargando...</p></div>
+        </div>
+    </div>
+
+    <!-- Modal Proveedor -->
+    <div class="modal-overlay" id="modalProveedor">
+        <div class="modal-box">
+            <h3><i class="ph ph-buildings"></i> <span id="modalProvTitle">Nuevo Proveedor</span></h3>
+            <input type="hidden" id="provId">
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Nombre / Razón Social *</label>
+                    <input type="text" id="provNombre" placeholder="Distribuidora López C.A.">
+                </div>
+                <div class="form-group">
+                    <label>RIF</label>
+                    <input type="text" id="provRif" placeholder="J-12345678-9">
+                </div>
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" id="provTelefono" placeholder="0414-0000000">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="provEmail" placeholder="proveedor@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Empresa / Marca</label>
+                    <input type="text" id="provEmpresa" placeholder="Samsung, HP, etc.">
+                </div>
+                <div class="form-group full">
+                    <label>Notas</label>
+                    <textarea id="provNotas" rows="2" placeholder="Observaciones..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="cerrarModalProveedor()">Cancelar</button>
+                <button class="btn btn-primary" onclick="guardarProveedor()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Crear Producto Nuevo -->
+    <div class="modal-overlay" id="modalNuevoProducto">
+        <div class="modal-box">
+            <h3><i class="ph ph-plus-circle"></i> Crear Nuevo Producto en Catálogo</h3>
+            <input type="hidden" id="nuevoNombreTemp">
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Tipo</label>
+                    <select id="nuevoTipo">
+                        <option value="producto">Producto (Tangible)</option>
+                        <option value="servicio">Servicio</option>
+                    </select>
+                </div>
+                <div class="form-group full">
+                    <label>Nombre *</label>
+                    <input type="text" id="nuevoNombre" placeholder="Nombre del producto">
+                </div>
+                <div class="form-group full">
+                    <label>Descripción</label>
+                    <textarea id="nuevoDesc" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Precio de venta (USD)</label>
+                    <input type="number" step="0.01" id="nuevoPrecio" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label>Stock inicial</label>
+                    <input type="number" id="nuevoStock" placeholder="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="cerrarModalNuevoProducto()">Cancelar</button>
+                <button class="btn btn-green" onclick="crearProductoYAgregar()"><i class="ph ph-plus"></i> Crear y Agregar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visor imagen ampliada -->
+    <div class="img-viewer-overlay" id="imgViewer" onclick="cerrarVisorImagen()">
+        <button class="img-viewer-close" onclick="cerrarVisorImagen()">✕</button>
+        <img id="imgViewerSrc" src="" alt="Factura">
+    </div>
+
+    <script src="compras.js"></script>
+</body>
+</html>

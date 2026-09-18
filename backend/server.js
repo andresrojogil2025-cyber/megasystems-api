@@ -42,6 +42,8 @@ const { enviarCobranzaAutomatica } = require('./controllers/whatsappController')
 const whatsappController = require('./controllers/whatsappController');
 const notaEntregaController = require('./controllers/notaEntregaController');
 const recibosController = require('./controllers/recibosController');
+const proveedoresController = require('./controllers/proveedoresController');
+const comprasController = require('./controllers/comprasController');
 
 // Rutas de Configuración Visual, Tasa BCV y Login
 app.get('/api/config/visual', authController.getVisualConfig);
@@ -85,6 +87,16 @@ app.post('/api/notas-entrega', notaEntregaController.create);
 app.get('/api/recibos', recibosController.getAll);
 app.get('/api/recibos/:id', recibosController.getDetails);
 app.post('/api/recibos', recibosController.create);
+
+// Rutas de Proveedores y Compras
+app.get('/api/proveedores', proveedoresController.getAll);
+app.post('/api/proveedores', proveedoresController.create);
+app.put('/api/proveedores/:id', proveedoresController.update);
+app.delete('/api/proveedores/:id', proveedoresController.delete);
+
+app.get('/api/compras', comprasController.getAll);
+app.post('/api/compras', comprasController.upload, comprasController.create);
+app.post('/api/compras/:id/factura', comprasController.upload, comprasController.uploadFactura);
 
 // Rutas de Retenciones
 app.get('/api/retenciones', retencionesController.getAll);
