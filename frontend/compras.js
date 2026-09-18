@@ -77,7 +77,18 @@ function renderTablaProveedores() {
     </table>`;
 }
 
+let _provModalFromForm = false;
+
 function abrirModalProveedor(id) {
+    _provModalFromForm = false;
+    document.getElementById('modalProvTitle').textContent = 'Nuevo Proveedor';
+    document.getElementById('provId').value = '';
+    ['provNombre','provRif','provTelefono','provEmail','provEmpresa','provNotas'].forEach(f => document.getElementById(f).value = '');
+    document.getElementById('modalProveedor').classList.add('open');
+}
+
+function abrirModalProveedorDesdeForm() {
+    _provModalFromForm = true;
     document.getElementById('modalProvTitle').textContent = 'Nuevo Proveedor';
     document.getElementById('provId').value = '';
     ['provNombre','provRif','provTelefono','provEmail','provEmpresa','provNotas'].forEach(f => document.getElementById(f).value = '');
@@ -122,9 +133,14 @@ async function guardarProveedor() {
         const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const d = await r.json();
         if (!d.success) throw new Error(d.error || 'Error al guardar');
+        const nuevoId = d.id || null;
         cerrarModalProveedor();
         await cargarProveedores();
         renderTablaProveedores();
+        if (_provModalFromForm && !id && nuevoId) {
+            document.getElementById('cProveedorId').value = nuevoId;
+        }
+        _provModalFromForm = false;
     } catch (e) {
         alert('Error: ' + e.message);
     }

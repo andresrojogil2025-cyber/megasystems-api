@@ -132,9 +132,14 @@
             <div class="form-grid three" style="margin-bottom:14px;">
                 <div class="form-group">
                     <label>Proveedor</label>
-                    <select id="cProveedorId">
-                        <option value="">Sin proveedor</option>
-                    </select>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <select id="cProveedorId" style="flex:1;">
+                            <option value="">Sin proveedor</option>
+                        </select>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalProveedorDesdeForm()" title="Agregar nuevo proveedor" style="white-space:nowrap;padding:9px 12px;">
+                            <i class="ph ph-plus"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Fecha de compra</label>
