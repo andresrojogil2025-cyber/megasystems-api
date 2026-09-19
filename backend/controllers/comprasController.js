@@ -269,12 +269,25 @@ const comprasController = {
                     "INSERT INTO compras_items (compra_id, catalogo_id, nombre_item, cantidad, costo_usd, subtotal_usd) VALUES (?, ?, ?, ?, ?, ?)",
                     [compraId, item.catalogo_id || null, item.nombre_item, parseInt(item.cantidad), parseFloat(item.costo_usd) || 0, subtotal]
                 );
-                // Actualizar stock si el ítem está vinculado al catálogo
+                // Actualizar stock y recalcular precio si el ítem está vinculado al catálogo
                 if (item.catalogo_id) {
                     await runAsync(
                         "UPDATE catalogo SET stock = COALESCE(stock, 0) + ? WHERE id = ?",
                         [parseInt(item.cantidad), item.catalogo_id]
                     );
+                    // Si viene costo de la factura y el producto tiene margen, recalcular precio
+                    const nuevoCosto = parseFloat(item.costo_usd) || 0;
+                    if (nuevoCosto > 0) {
+                        const catRows = await queryAsync("SELECT margen_ganancia FROM catalogo WHERE id = ?", [item.catalogo_id]);
+                        if (catRows.length && parseFloat(catRows[0].margen_ganancia) > 0) {
+                            const margen = parseFloat(catRows[0].margen_ganancia);
+                            const nuevoPrecio = +(nuevoCosto * (1 + margen / 100)).toFixed(2);
+                            await runAsync(
+                                "UPDATE catalogo SET costo_usd = ?, precio_usd = ? WHERE id = ?",
+                                [nuevoCosto, nuevoPrecio, item.catalogo_id]
+                            );
+                        }
+                    }
                 }
             }
 
@@ -299,15 +312,18 @@ const comprasController = {
     addItemToCatalogo: async (req, res) => {
         try {
             const { itemId } = req.params;
-            const { nombre, tipo, precio_usd, stock } = req.body;
+            const { nombre, tipo, precio_usd, costo_usd, margen_ganancia, stock } = req.body;
             const items = await queryAsync('SELECT * FROM compras_items WHERE id = ?', [itemId]);
             if (!items.length) return res.status(404).json({ success: false, error: 'Ítem no encontrado' });
             const item = items[0];
             if (item.catalogo_id) return res.json({ success: true, catalogo_id: item.catalogo_id, message: 'Ya está en catálogo' });
             const finalStock = tipo === 'servicio' ? null : (parseInt(stock) || 0);
+            const costo = parseFloat(costo_usd) || parseFloat(item.costo_usd) || 0;
+            const margen = parseFloat(margen_ganancia) || 0;
+            const precio = parseFloat(precio_usd) || (costo > 0 ? +(costo * (1 + margen / 100)).toFixed(2) : 0);
             const r = await runAsync(
-                'INSERT INTO catalogo (tipo, nombre, precio_usd, stock) VALUES (?, ?, ?, ?)',
-                [tipo || 'producto', nombre, parseFloat(precio_usd) || 0, finalStock]
+                'INSERT INTO catalogo (tipo, nombre, precio_usd, costo_usd, margen_ganancia, stock) VALUES (?, ?, ?, ?, ?, ?)',
+                [tipo || 'producto', nombre, precio, costo, margen, finalStock]
             );
             const catalogoId = r.lastID;
             await runAsync('UPDATE compras_items SET catalogo_id = ? WHERE id = ?', [catalogoId, itemId]);

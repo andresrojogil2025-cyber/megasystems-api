@@ -29,20 +29,17 @@ const catalogoController = {
     // Registrar Producto o Servicio
     create: async (req, res) => {
         try {
-            const { tipo, nombre, descripcion, precio_usd, stock } = req.body;
-            
-            if (!tipo || !nombre || isNaN(precio_usd)) {
-                return res.status(400).json({ error: 'Faltan datos obligatorios (Tipo, Nombre, Precio)' });
-            }
-
-            // Si es servicio, el stock debe ser null
+            const { tipo, nombre, descripcion, precio_usd, costo_usd, margen_ganancia, stock } = req.body;
+            if (!tipo || !nombre) return res.status(400).json({ error: 'Faltan datos obligatorios (Tipo, Nombre)' });
             const finalStock = tipo === 'servicio' ? null : (parseInt(stock) || 0);
-
+            const costo = parseFloat(costo_usd) || 0;
+            const margen = parseFloat(margen_ganancia) || 0;
+            // Precio: si viene explícito lo usamos, si no lo calculamos del costo+margen
+            const precio = parseFloat(precio_usd) || (costo > 0 ? +(costo * (1 + margen / 100)).toFixed(2) : 0);
             const info = await db.runAsync(
-                'INSERT INTO catalogo (tipo, nombre, descripcion, precio_usd, stock) VALUES (?, ?, ?, ?, ?)',
-                [tipo, nombre, descripcion, parseFloat(precio_usd), finalStock]
+                'INSERT INTO catalogo (tipo, nombre, descripcion, precio_usd, costo_usd, margen_ganancia, stock) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [tipo, nombre, descripcion || '', precio, costo, margen, finalStock]
             );
-
             res.json({ success: true, message: `${tipo === 'producto' ? 'Producto' : 'Servicio'} registrado en catálogo`, id: info.lastID });
         } catch (error) {
             console.error(error);
@@ -54,19 +51,16 @@ const catalogoController = {
     update: async (req, res) => {
         try {
             const { id } = req.params;
-            const { tipo, nombre, descripcion, precio_usd, stock } = req.body;
-
-            if (!tipo || !nombre || isNaN(precio_usd)) {
-                return res.status(400).json({ error: 'Faltan datos obligatorios' });
-            }
-
+            const { tipo, nombre, descripcion, precio_usd, costo_usd, margen_ganancia, stock } = req.body;
+            if (!tipo || !nombre) return res.status(400).json({ error: 'Faltan datos obligatorios' });
             const finalStock = tipo === 'servicio' ? null : (parseInt(stock) || 0);
-
+            const costo = parseFloat(costo_usd) || 0;
+            const margen = parseFloat(margen_ganancia) || 0;
+            const precio = parseFloat(precio_usd) || (costo > 0 ? +(costo * (1 + margen / 100)).toFixed(2) : 0);
             await db.runAsync(
-                'UPDATE catalogo SET tipo = ?, nombre = ?, descripcion = ?, precio_usd = ?, stock = ? WHERE id = ?',
-                [tipo, nombre, descripcion, parseFloat(precio_usd), finalStock, id]
+                'UPDATE catalogo SET tipo=?, nombre=?, descripcion=?, precio_usd=?, costo_usd=?, margen_ganancia=?, stock=? WHERE id=?',
+                [tipo, nombre, descripcion || '', precio, costo, margen, finalStock, id]
             );
-
             res.json({ success: true, message: 'Ítem actualizado' });
         } catch (error) {
             console.error(error);

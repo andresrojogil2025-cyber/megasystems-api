@@ -84,15 +84,28 @@
                     <textarea id="descripcion" rows="3" placeholder="Especificaciones o detalles del servicio..."></textarea>
                 </div>
                 
-                <div style="display: flex; gap: 15px;">
-                    <div class="form-group" style="flex: 1;">
-                        <label>Precio Base (USD) $</label>
-                        <input type="number" step="0.01" id="precio_usd" required placeholder="0.00">
+                <div style="display:flex; gap:10px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Costo (USD) $</label>
+                        <input type="number" step="0.01" id="costo_usd" placeholder="0.00" oninput="calcPrecioNuevo()">
                     </div>
-                    <div class="form-group" id="stockGroup" style="flex: 1;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Margen %</label>
+                        <input type="number" step="0.1" id="margen_ganancia" placeholder="0" oninput="calcPrecioNuevo()">
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; align-items:flex-end;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Precio Venta (USD) $</label>
+                        <input type="number" step="0.01" id="precio_usd" placeholder="0.00" oninput="calcMargenNuevo()" style="border-color:#16a34a;">
+                    </div>
+                    <div class="form-group" id="stockGroup" style="flex:1;">
                         <label>Stock Inicial</label>
                         <input type="number" id="stock" placeholder="Cant.">
                     </div>
+                </div>
+                <div id="precioResumen" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:0.85rem;color:#166534;display:none;">
+                    Costo: <strong id="rCosto">$0</strong> + <strong id="rMargen">0</strong>% = Precio venta: <strong id="rPrecio">$0</strong>
                 </div>
 
                 <button type="submit" class="btn-primary" style="margin-top: 10px;">Agregar al Catálogo</button>
@@ -145,15 +158,28 @@
                 <label>Descripción</label>
                 <textarea id="editDescripcion" rows="2"></textarea>
             </div>
-            <div style="display:flex; gap:15px;">
+            <div style="display:flex; gap:10px;">
                 <div class="form-group" style="flex:1;">
-                    <label>Precio (USD)</label>
-                    <input type="number" step="0.01" id="editPrecio">
+                    <label>Costo (USD) $</label>
+                    <input type="number" step="0.01" id="editCosto" oninput="calcPrecioEdit()">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>Margen %</label>
+                    <input type="number" step="0.1" id="editMargen" oninput="calcPrecioEdit()">
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; align-items:flex-end;">
+                <div class="form-group" style="flex:1;">
+                    <label>Precio Venta (USD) $</label>
+                    <input type="number" step="0.01" id="editPrecio" oninput="calcMargenEdit()" style="border-color:#16a34a;">
                 </div>
                 <div class="form-group" id="editStockGroup" style="flex:1;">
                     <label>Stock</label>
                     <input type="number" id="editStock">
                 </div>
+            </div>
+            <div id="editPrecioResumen" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:0.85rem;color:#166534;display:none;">
+                Costo: <strong id="eRCosto">$0</strong> + <strong id="eRMargen">0</strong>% = Precio venta: <strong id="eRPrecio">$0</strong>
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeEditModal()">Cancelar</button>

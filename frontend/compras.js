@@ -207,12 +207,20 @@ function catalogoColHTML(item, i) {
         return `<span style="background:#dcfce7;color:#16a34a;padding:3px 8px;border-radius:8px;font-size:0.72rem;font-weight:700;display:inline-block;">✓ ${nombre}</span>`;
     }
     if (item.crear_en_catalogo) {
-        return `<div style="display:flex;gap:4px;align-items:center;">
-            <span style="background:#fef9c3;color:#854d0e;padding:2px 6px;border-radius:6px;font-size:0.7rem;font-weight:700;">NUEVO</span>
-            <input type="number" placeholder="Precio $" step="0.01" min="0" value="${item.precio_venta||''}"
-                onchange="itemsCompra[${i}].precio_venta=parseFloat(this.value)||0"
-                style="width:78px;padding:3px 6px;border:1.5px solid #fde047;border-radius:6px;font-size:0.82rem;">
-            <button onclick="itemsCompra[${i}].crear_en_catalogo=false;renderItems()" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:15px;padding:0;line-height:1;">✕</button>
+        const costo = parseFloat(item.costo_usd) || 0;
+        return `<div style="display:flex;flex-direction:column;gap:3px;">
+            <span style="background:#fef9c3;color:#854d0e;padding:2px 6px;border-radius:6px;font-size:0.7rem;font-weight:700;width:fit-content;">NUEVO</span>
+            <div style="display:flex;gap:3px;align-items:center;">
+                <span style="font-size:0.7rem;color:#64748b;">M%</span>
+                <input type="number" placeholder="%" step="0.1" min="0" value="${item.margen_pct||''}"
+                    oninput="setMargenItem(${i},this.value)"
+                    style="width:48px;padding:2px 5px;border:1px solid #fde047;border-radius:5px;font-size:0.78rem;">
+                <span style="font-size:0.7rem;color:#64748b;">P$</span>
+                <input type="number" id="pv-${i}" placeholder="Precio" step="0.01" min="0" value="${item.precio_venta||''}"
+                    oninput="setPrecioItem(${i},this.value)"
+                    style="width:62px;padding:2px 5px;border:1.5px solid #16a34a;border-radius:5px;font-size:0.78rem;">
+                <button onclick="itemsCompra[${i}].crear_en_catalogo=false;renderItems()" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;padding:0;line-height:1;">✕</button>
+            </div>
         </div>`;
     }
     if (item.catalogo_match) {
@@ -235,7 +243,35 @@ function vincularACatalogo(i, catId) {
     itemsCompra[i].catalogo_id = catId;
     itemsCompra[i].crear_en_catalogo = false;
     itemsCompra[i].catalogo_match = null;
+    // Mostrar info de recálculo si el producto tiene margen
+    const cat = catalogoCache.find(c => c.id === catId);
+    if (cat && parseFloat(cat.margen_ganancia) > 0) {
+        const nuevoCosto = parseFloat(itemsCompra[i].costo_usd) || 0;
+        if (nuevoCosto > 0) {
+            const nuevoPrecio = +(nuevoCosto * (1 + parseFloat(cat.margen_ganancia) / 100)).toFixed(2);
+            itemsCompra[i]._precioRecalculado = nuevoPrecio;
+        }
+    }
     renderItems();
+}
+
+function setMargenItem(i, val) {
+    itemsCompra[i].margen_pct = parseFloat(val) || 0;
+    const costo = parseFloat(itemsCompra[i].costo_usd) || 0;
+    if (costo > 0) {
+        const precio = +(costo * (1 + itemsCompra[i].margen_pct / 100)).toFixed(2);
+        itemsCompra[i].precio_venta = precio;
+        const el = document.getElementById(`pv-${i}`);
+        if (el) el.value = precio;
+    }
+}
+
+function setPrecioItem(i, val) {
+    itemsCompra[i].precio_venta = parseFloat(val) || 0;
+    const costo = parseFloat(itemsCompra[i].costo_usd) || 0;
+    if (costo > 0 && itemsCompra[i].precio_venta > 0) {
+        itemsCompra[i].margen_pct = +((itemsCompra[i].precio_venta - costo) / costo * 100).toFixed(2);
+    }
 }
 
 function buscarMatchesCatalogo() {
@@ -523,14 +559,18 @@ async function guardarCompra() {
         // 1. Crear en catálogo los ítems marcados como nuevos
         const nuevos = itemsCompra.filter(it => it.crear_en_catalogo && !it.catalogo_id);
         for (const item of nuevos) {
-            const precioVenta = parseFloat(item.precio_venta) || 0;
+            const costo = parseFloat(item.costo_usd) || 0;
+            const margen = parseFloat(item.margen_pct) || 0;
+            const precio = parseFloat(item.precio_venta) || (costo > 0 && margen > 0 ? +(costo * (1 + margen / 100)).toFixed(2) : costo);
             const rc = await fetch('/api/catalogo', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     tipo: 'producto',
                     nombre: item.nombre_item,
-                    precio_usd: precioVenta,
+                    costo_usd: costo,
+                    margen_ganancia: margen,
+                    precio_usd: precio,
                     stock: parseInt(item.cantidad) || 0
                 })
             });
@@ -670,14 +710,45 @@ async function subirFacturaExistente(compraId, input) {
 }
 
 // ── Agregar ítems del historial al catálogo ───────────────────────────────────
+function calcModalItemPrecio() {
+    const costo = parseFloat(document.getElementById('itemCatCosto').value) || 0;
+    const margen = parseFloat(document.getElementById('itemCatMargen').value) || 0;
+    if (costo > 0 && margen >= 0) {
+        const precio = +(costo * (1 + margen / 100)).toFixed(2);
+        document.getElementById('itemCatPrecio').value = precio;
+        _mostrarResumenModal(costo, margen, precio);
+    }
+}
+
+function calcModalItemMargen() {
+    const costo = parseFloat(document.getElementById('itemCatCosto').value) || 0;
+    const precio = parseFloat(document.getElementById('itemCatPrecio').value) || 0;
+    if (costo > 0 && precio >= 0) {
+        const margen = +((precio - costo) / costo * 100).toFixed(2);
+        document.getElementById('itemCatMargen').value = margen;
+        _mostrarResumenModal(costo, margen, precio);
+    }
+}
+
+function _mostrarResumenModal(costo, margen, precio) {
+    const r = document.getElementById('modalItemResumen');
+    document.getElementById('miRCosto').textContent = '$' + parseFloat(costo).toFixed(2);
+    document.getElementById('miRMargen').textContent = parseFloat(margen).toFixed(1);
+    document.getElementById('miRPrecio').textContent = '$' + parseFloat(precio).toFixed(2);
+    r.style.display = 'block';
+}
+
 function abrirModalItemCatalogo(itemId, nombre, cantidad, costoUsd) {
     document.getElementById('itemCatItemId').value = itemId;
     document.getElementById('itemCatNombre').value = nombre;
     document.getElementById('itemCatTipo').value = 'producto';
+    document.getElementById('itemCatCosto').value = costoUsd || '';
+    document.getElementById('itemCatMargen').value = '';
     document.getElementById('itemCatPrecio').value = '';
     document.getElementById('itemCatStock').value = cantidad;
+    document.getElementById('modalItemResumen').style.display = 'none';
     document.getElementById('modalItemCatalogo').classList.add('open');
-    setTimeout(() => document.getElementById('itemCatPrecio').focus(), 100);
+    setTimeout(() => document.getElementById('itemCatMargen').focus(), 100);
 }
 
 function cerrarModalItemCatalogo() {
@@ -688,15 +759,17 @@ async function guardarItemEnCatalogo() {
     const itemId = document.getElementById('itemCatItemId').value;
     const nombre = document.getElementById('itemCatNombre').value.trim();
     const tipo = document.getElementById('itemCatTipo').value;
-    const precio_usd = parseFloat(document.getElementById('itemCatPrecio').value);
+    const costo_usd = parseFloat(document.getElementById('itemCatCosto').value) || 0;
+    const margen_ganancia = parseFloat(document.getElementById('itemCatMargen').value) || 0;
+    const precio_usd = parseFloat(document.getElementById('itemCatPrecio').value) || 0;
     const stock = parseInt(document.getElementById('itemCatStock').value) || 0;
     if (!nombre) { alert('El nombre es obligatorio'); return; }
-    if (isNaN(precio_usd) || precio_usd < 0) { alert('Ingresa un precio de venta válido'); return; }
+    if (precio_usd <= 0 && !confirm('El precio de venta es $0. ¿Continuar y editarlo luego?')) return;
     try {
         const r = await fetch(`/api/compras/items/${itemId}/al-catalogo`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombre, tipo, precio_usd, stock })
+            body: JSON.stringify({ nombre, tipo, costo_usd, margen_ganancia, precio_usd, stock })
         });
         const d = await r.json();
         if (!d.success) throw new Error(d.error || 'Error');

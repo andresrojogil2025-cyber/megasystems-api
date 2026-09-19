@@ -342,7 +342,7 @@
 
     <!-- Modal: Agregar ítem al catálogo desde historial -->
     <div class="modal-overlay" id="modalItemCatalogo">
-        <div class="modal-box" style="width:420px;">
+        <div class="modal-box" style="width:440px;">
             <h3><i class="ph ph-package"></i> Agregar al Catálogo</h3>
             <input type="hidden" id="itemCatItemId">
             <div class="form-group" style="margin-bottom:12px;">
@@ -356,9 +356,22 @@
                     <option value="servicio">Servicio</option>
                 </select>
             </div>
+            <div style="display:flex;gap:10px;margin-bottom:4px;">
+                <div class="form-group" style="flex:1;margin-bottom:0;">
+                    <label>Costo (USD) $</label>
+                    <input type="number" id="itemCatCosto" step="0.01" min="0" placeholder="0.00" oninput="calcModalItemPrecio()" style="background:#f8fafc;">
+                </div>
+                <div class="form-group" style="flex:1;margin-bottom:0;">
+                    <label>Margen %</label>
+                    <input type="number" id="itemCatMargen" step="0.1" min="0" placeholder="0" oninput="calcModalItemPrecio()">
+                </div>
+            </div>
             <div class="form-group" style="margin-bottom:12px;">
-                <label>Precio de Venta (USD) <span style="color:#94a3b8;font-weight:400;font-size:0.78rem;">— tú lo defines</span></label>
-                <input type="number" id="itemCatPrecio" step="0.01" min="0" placeholder="0.00">
+                <label>Precio de Venta (USD) $</label>
+                <input type="number" id="itemCatPrecio" step="0.01" min="0" placeholder="0.00" oninput="calcModalItemMargen()" style="border-color:#16a34a;">
+            </div>
+            <div id="modalItemResumen" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:0.85rem;color:#166534;display:none;">
+                Costo: <strong id="miRCosto"></strong> + <strong id="miRMargen"></strong>% = Precio venta: <strong id="miRPrecio"></strong>
             </div>
             <div class="form-group" style="margin-bottom:12px;">
                 <label>Stock inicial</label>
