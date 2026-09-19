@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Documentos - Megasystems</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css">
+    <style>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .page-header h1 { margin: 0; font-size: 1.5rem; }
+
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--color-border, #e5e7eb);
+            margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            padding: 10px 22px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .tab-btn.active {
+            color: var(--color-primary, #1e3a8a);
+            border-bottom-color: var(--color-primary, #1e3a8a);
+        }
+
+        .tab-btn i { margin-right: 6px; }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+
+        .toolbar input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--color-border, #d1d5db);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+
+        thead th {
+            background: var(--color-surface-alt, #f8fafc);
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid var(--color-border, #e5e7eb);
+        }
+
+        tbody tr { border-bottom: 1px solid var(--color-border, #e5e7eb); }
+        tbody tr:hover { background: var(--color-surface-alt, #f8fafc); }
+        tbody td { padding: 10px 12px; vertical-align: middle; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-pendiente { background: #fef3c7; color: #92400e; }
+        .badge-convertida { background: #d1fae5; color: #065f46; }
+        .badge-anulada { background: #fee2e2; color: #991b1b; }
+
+        .btn-action {
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            margin-right: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: filter 0.15s;
+        }
+
+        .btn-action:hover { filter: brightness(0.9); }
+
+        .btn-ver { background: #e0f2fe; color: #0369a1; }
+        .btn-print { background: #f0fdf4; color: #166534; }
+        .btn-items { background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; }
+
+        .empty-row td { text-align: center; color: #9ca3af; padding: 40px; font-style: italic; }
+
+        .amount { font-weight: 600; color: #111827; }
+        .amount-ves { font-size: 0.8rem; color: #6b7280; }
+    </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="images/logo_jarg.jpeg" alt="MegaSystems" onerror="this.style.display='none'">
+            <span class="logo-text">MegaSystems</span>
+        </div>
+        <nav class="nav-menu">
+            <a href="dashboard.html" class="nav-item"><i class="ph ph-squares-four"></i> Dashboard</a>
+            <a href="facturacion.html" class="nav-item"><i class="ph ph-receipt"></i> Facturación</a>
+            <a href="historial.html" class="nav-item active"><i class="ph ph-clock-counter-clockwise"></i> Historial</a>
+            <a href="notas_entrega.html" class="nav-item"><i class="ph ph-truck"></i> Notas de Entrega</a>
+            <a href="recibos.html" class="nav-item"><i class="ph ph-hand-coins"></i> Recibos de Pago</a>
+            <a href="clientes.html" class="nav-item"><i class="ph ph-users"></i> Clientes</a>
+            <a href="catalogo.html" class="nav-item"><i class="ph ph-hard-drives"></i> Catálogo</a>
+            <a href="compras.html" class="nav-item"><i class="ph ph-shopping-cart-simple"></i> Compras</a>
+            <a href="usuarios.html" class="nav-item"><i class="ph ph-shield-check"></i> Accesos (Usuarios)</a>
+            <a href="retenciones.html" class="nav-item"><i class="ph ph-hand-coins"></i> Retenciones</a>
+            <a href="cuentas_por_cobrar.html" class="nav-item"><i class="ph ph-money"></i> Cuentas por Cobrar</a>
+            <a href="cobranza_internet.html" class="nav-item"><i class="ph ph-wifi-high"></i> Cobranza Internet</a>
+            <a href="#" class="nav-item"><i class="ph ph-books"></i> Libros SENIAT</a>
+            <a href="configuracion.html" class="nav-item"><i class="ph ph-gear"></i> Configuración</a>
+        </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-content">
+        <div class="page-header">
+            <h1><i class="ph ph-clock-counter-clockwise" style="color:var(--color-primary);"></i> Historial de Documentos</h1>
+            <button onclick="recargarTodo()" class="btn-action btn-ver" style="padding:8px 14px;font-size:0.85rem;">
+                <i class="ph ph-arrows-clockwise"></i> Actualizar
+            </button>
+        </div>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('facturas', this)">
+                <i class="ph ph-receipt"></i> Facturas
+            </button>
+            <button class="tab-btn" onclick="switchTab('cotizaciones', this)">
+                <i class="ph ph-file-text"></i> Cotizaciones
+            </button>
+            <button class="tab-btn" onclick="switchTab('notas', this)">
+                <i class="ph ph-truck"></i> Notas de Entrega
+            </button>
+        </div>
+
+        <!-- TAB: FACTURAS -->
+        <div id="panel-facturas" class="tab-panel active">
+            <div class="toolbar">
+                <input type="text" id="searchFacturas" placeholder="Buscar por cliente, nro de factura..." oninput="filtrarFacturas()">
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nro Factura</th>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Total USD</th>
+                            <th>Total Bs</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyFacturas">
+                        <tr class="empty-row"><td colspan="6">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB: COTIZACIONES -->
+        <div id="panel-cotizaciones" class="tab-panel">
+            <div class="toolbar">
+                <input type="text" id="searchCotizaciones" placeholder="Buscar por cliente, nro de cotización..." oninput="filtrarCotizaciones()">
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nro Cotización</th>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Total USD</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyCotizaciones">
+                        <tr class="empty-row"><td colspan="6">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB: NOTAS DE ENTREGA -->
+        <div id="panel-notas" class="tab-panel">
+            <div class="toolbar">
+                <input type="text" id="searchNotas" placeholder="Buscar por cliente, nro de nota..." oninput="filtrarNotas()">
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nro Nota</th>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Total USD</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyNotas">
+                        <tr class="empty-row"><td colspan="5">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+    const API_URL = '/api';
+
+    if (!localStorage.getItem('token')) { window.location.href = 'index.html'; }
+
+    const fmt = (n) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
+    const fmtFecha = (f) => f ? new Date(f).toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+
+    let dataFacturas = [], dataCotizaciones = [], dataNotas = [];
+
+    // ── TABS ─────────────────────────────────────────────────────────────────
+    function switchTab(name, btn) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('panel-' + name).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    // ── CARGA INICIAL ─────────────────────────────────────────────────────────
+    async function recargarTodo() {
+        await Promise.all([cargarFacturas(), cargarCotizaciones(), cargarNotas()]);
+    }
+
+    async function cargarFacturas() {
+        try {
+            const r = await fetch(`${API_URL}/billing/invoices`);
+            const d = await r.json();
+            dataFacturas = d.data || [];
+            renderFacturas(dataFacturas);
+        } catch (e) {
+            document.getElementById('tbodyFacturas').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar facturas.</td></tr>';
+        }
+    }
+
+    async function cargarCotizaciones() {
+        try {
+            const r = await fetch(`${API_URL}/billing/quotes-all`);
+            const d = await r.json();
+            dataCotizaciones = d.data || [];
+            renderCotizaciones(dataCotizaciones);
+        } catch (e) {
+            document.getElementById('tbodyCotizaciones').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar cotizaciones.</td></tr>';
+        }
+    }
+
+    async function cargarNotas() {
+        try {
+            const r = await fetch(`${API_URL}/notas-entrega`);
+            const d = await r.json();
+            dataNotas = d.data || [];
+            renderNotas(dataNotas);
+        } catch (e) {
+            document.getElementById('tbodyNotas').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar notas.</td></tr>';
+        }
+    }
+
+    // ── RENDER ────────────────────────────────────────────────────────────────
+    function renderFacturas(rows) {
+        const tb = document.getElementById('tbodyFacturas');
+        if (!rows.length) {
+            tb.innerHTML = '<tr class="empty-row"><td colspan="6">No hay facturas registradas.</td></tr>';
+            return;
+        }
+        tb.innerHTML = rows.map(f => `
+            <tr>
+                <td><strong>${f.nro_factura || f.id}</strong><br><small style="color:#9ca3af;">${f.nro_control || ''}</small></td>
+                <td>${fmtFecha(f.fecha)}</td>
+                <td>${f.cliente_nombre || '—'}<br><small style="color:#9ca3af;">${f.cliente_rif || ''}</small></td>
+                <td class="amount">$${fmt(f.total_usd)}</td>
+                <td class="amount-ves">Bs. ${fmt(f.total_ves)}</td>
+                <td>
+                    <button class="btn-action btn-print" onclick="window.open('print_invoice.html?id=${f.id}','_blank')">
+                        <i class="ph ph-printer"></i> Reimprimir
+                    </button>
+                    <button class="btn-action btn-items" onclick="usarItemsFactura(${f.id})">
+                        <i class="ph ph-copy"></i> Usar ítems
+                    </button>
+                </td>
+            </tr>`).join('');
+    }
+
+    function renderCotizaciones(rows) {
+        const tb = document.getElementById('tbodyCotizaciones');
+        if (!rows.length) {
+            tb.innerHTML = '<tr class="empty-row"><td colspan="6">No hay cotizaciones registradas.</td></tr>';
+            return;
+        }
+        tb.innerHTML = rows.map(q => {
+            const badgeClass = q.estado === 'pendiente' ? 'badge-pendiente'
+                : q.estado === 'convertida_a_factura' ? 'badge-convertida' : 'badge-anulada';
+            const estadoLabel = q.estado === 'pendiente' ? 'Pendiente'
+                : q.estado === 'convertida_a_factura' ? 'Facturada' : q.estado;
+            return `
+            <tr>
+                <td><strong>${q.nro_cotizacion || q.id}</strong></td>
+                <td>${fmtFecha(q.fecha)}</td>
+                <td>${q.cliente_nombre || '—'}<br><small style="color:#9ca3af;">${q.cliente_rif || ''}</small></td>
+                <td class="amount">$${fmt(q.total_usd)}</td>
+                <td><span class="badge ${badgeClass}">${estadoLabel}</span></td>
+                <td>
+                    <button class="btn-action btn-print" onclick="window.open('print_quote.html?id=${q.id}','_blank')">
+                        <i class="ph ph-printer"></i> Reimprimir
+                    </button>
+                    <button class="btn-action btn-items" onclick="usarItemsCotizacion(${q.id})">
+                        <i class="ph ph-copy"></i> Usar ítems
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    function renderNotas(rows) {
+        const tb = document.getElementById('tbodyNotas');
+        if (!rows.length) {
+            tb.innerHTML = '<tr class="empty-row"><td colspan="5">No hay notas de entrega registradas.</td></tr>';
+            return;
+        }
+        tb.innerHTML = rows.map(n => `
+            <tr>
+                <td><strong>${n.nro_nota_entrega || n.id}</strong></td>
+                <td>${fmtFecha(n.fecha)}</td>
+                <td>${n.cliente_nombre || '—'}<br><small style="color:#9ca3af;">${n.cliente_rif || ''}</small></td>
+                <td class="amount">$${fmt(n.total_usd)}</td>
+                <td>
+                    <button class="btn-action btn-print" onclick="window.open('print_nota_entrega.html?id=${n.id}','_blank')">
+                        <i class="ph ph-printer"></i> Reimprimir
+                    </button>
+                    <button class="btn-action btn-items" onclick="usarItemsNota(${n.id})">
+                        <i class="ph ph-copy"></i> Usar ítems
+                    </button>
+                </td>
+            </tr>`).join('');
+    }
+
+    // ── FILTROS ───────────────────────────────────────────────────────────────
+    function filtrarFacturas() {
+        const q = document.getElementById('searchFacturas').value.toLowerCase();
+        const filtered = dataFacturas.filter(f =>
+            (f.nro_factura || '').toLowerCase().includes(q) ||
+            (f.cliente_nombre || '').toLowerCase().includes(q) ||
+            (f.cliente_rif || '').toLowerCase().includes(q)
+        );
+        renderFacturas(filtered);
+    }
+
+    function filtrarCotizaciones() {
+        const q = document.getElementById('searchCotizaciones').value.toLowerCase();
+        const filtered = dataCotizaciones.filter(c =>
+            (c.nro_cotizacion || '').toLowerCase().includes(q) ||
+            (c.cliente_nombre || '').toLowerCase().includes(q) ||
+            (c.cliente_rif || '').toLowerCase().includes(q)
+        );
+        renderCotizaciones(filtered);
+    }
+
+    function filtrarNotas() {
+        const q = document.getElementById('searchNotas').value.toLowerCase();
+        const filtered = dataNotas.filter(n =>
+            (n.nro_nota_entrega || '').toLowerCase().includes(q) ||
+            (n.cliente_nombre || '').toLowerCase().includes(q) ||
+            (n.cliente_rif || '').toLowerCase().includes(q)
+        );
+        renderNotas(filtered);
+    }
+
+    // ── USAR ÍTEMS ────────────────────────────────────────────────────────────
+    function usarItemsCotizacion(id) {
+        window.location.href = `facturacion.html?from_quote=${id}`;
+    }
+
+    function usarItemsFactura(id) {
+        window.location.href = `facturacion.html?from_invoice=${id}`;
+    }
+
+    function usarItemsNota(id) {
+        window.location.href = `facturacion.html?from_nota=${id}`;
+    }
+
+    // ── INIT ──────────────────────────────────────────────────────────────────
+    recargarTodo();
+</script>
+</body>
+</html>

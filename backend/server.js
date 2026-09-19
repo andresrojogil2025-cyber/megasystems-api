@@ -74,8 +74,11 @@ app.delete('/api/usuarios/:id', usuariosController.delete);
 
 // Rutas de Cotizaciones y Facturación
 app.get('/api/billing/quotes', billerController.getQuotes);
+app.get('/api/billing/quotes-all', billerController.getAllQuotesHistorial);
 app.get('/api/billing/quote/:id', billerController.getQuoteDetails);
 app.post('/api/billing/quote', billerController.createQuote);
+app.get('/api/billing/invoices', billerController.getAllInvoices);
+app.get('/api/billing/invoice/:id', billerController.getInvoiceDetails);
 app.post('/api/billing/invoice', billerController.createInvoice);
 
 // Rutas de Notas de Entrega

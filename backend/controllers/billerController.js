@@ -145,6 +145,7 @@ const billerController = {
             res.json({
                 success: true,
                 message: 'Factura fiscal emitida exitosamente.',
+                id: factura_id,
                 nro_factura,
                 nro_control,
                 montos: {
@@ -172,6 +173,57 @@ const billerController = {
             res.json({ success: true, data: quotes });
         } catch (error) {
             res.status(500).json({ error: 'Error al obtener cotizaciones' });
+        }
+    },
+
+    // 4b. Obtener TODAS las cotizaciones (todos los estados) para historial
+    getAllQuotesHistorial: async (req, res) => {
+        try {
+            const sql = `
+                SELECT c.*, e.nombre_razon as cliente_nombre, e.rif as cliente_rif
+                FROM cotizaciones c
+                JOIN entidades e ON c.cliente_id = e.id
+                ORDER BY c.fecha DESC
+            `;
+            const quotes = await db.queryAsync(sql);
+            res.json({ success: true, data: quotes });
+        } catch (error) {
+            res.status(500).json({ error: 'Error al obtener historial de cotizaciones' });
+        }
+    },
+
+    // 5. Obtener todas las facturas para historial
+    getAllInvoices: async (req, res) => {
+        try {
+            const sql = `
+                SELECT f.*, e.nombre_razon as cliente_nombre, e.rif as cliente_rif
+                FROM facturas f
+                JOIN entidades e ON f.cliente_id = e.id
+                ORDER BY f.fecha DESC
+            `;
+            const invoices = await db.queryAsync(sql);
+            res.json({ success: true, data: invoices });
+        } catch (error) {
+            res.status(500).json({ error: 'Error al obtener facturas' });
+        }
+    },
+
+    // 6. Obtener detalle completo de una factura para reimprimir
+    getInvoiceDetails: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const factura = await db.queryAsync('SELECT * FROM facturas WHERE id = ?', [id]);
+            if (!factura.length) return res.status(404).json({ error: 'Factura no encontrada' });
+            const details = await db.queryAsync(`
+                SELECT fd.*, c.nombre as item_nombre, c.tipo as item_tipo
+                FROM factura_detalles fd
+                JOIN catalogo c ON fd.catalogo_id = c.id
+                WHERE fd.factura_id = ?
+            `, [id]);
+            const cliente = await db.queryAsync('SELECT * FROM entidades WHERE id = ?', [factura[0].cliente_id]);
+            res.json({ success: true, data: { ...factura[0], cliente: cliente[0], items: details } });
+        } catch (error) {
+            res.status(500).json({ error: 'Error al obtener detalle de factura' });
         }
     },
 

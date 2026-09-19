@@ -114,25 +114,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     await loadDBs();
     selectedClientBox.style.display = 'none';
+    await loadFromUrl();
 
     // ======== AUTOCOMPLETADO DE COTIZACIONES ========
     function filterQuotes(val) {
         quotesDropdown.innerHTML = '';
         const searchVal = (val || "").toLowerCase().trim();
-        
-        const filtered = allQuotes.filter(q => 
-            q.nro_cotizacion.toLowerCase().includes(searchVal) || 
+
+        const filtered = allQuotes.filter(q =>
+            q.nro_cotizacion.toLowerCase().includes(searchVal) ||
             (q.cliente_nombre || "").toLowerCase().includes(searchVal) ||
             (q.cliente_rif || "").toLowerCase().includes(searchVal)
         );
-        
+
         if(filtered.length > 0) {
             filtered.forEach(q => {
                 const div = document.createElement('div');
-                div.style.padding = "10px";
-                div.style.borderBottom = "1px solid #f3f4f6";
-                div.innerHTML = `<i class="ph ph-file-text" style="color:var(--color-primary);"></i> <strong>${q.nro_cotizacion}</strong> <br> <small>${q.cliente_nombre} (${q.cliente_rif})</small>`;
-                div.onclick = () => loadQuoteDetails(q.id);
+                div.style.cssText = "padding:8px 10px;border-bottom:1px solid #f3f4f6;";
+                div.innerHTML = `
+                    <div style="margin-bottom:5px;">
+                        <i class="ph ph-file-text" style="color:var(--color-primary);"></i>
+                        <strong>${q.nro_cotizacion}</strong>
+                        <small style="color:#6b7280;"> · ${q.cliente_nombre}</small>
+                    </div>
+                    <div style="display:flex;gap:5px;">
+                        <button onclick="loadQuoteDetails(${q.id})" style="flex:1;padding:4px 6px;font-size:0.76rem;background:#1e3a8a;color:white;border:none;border-radius:4px;cursor:pointer;">
+                            Cargar completa (con cliente)
+                        </button>
+                        <button onclick="loadQuoteItemsOnly(${q.id})" style="flex:1;padding:4px 6px;font-size:0.76rem;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;border-radius:4px;cursor:pointer;">
+                            Solo ítems (otro cliente)
+                        </button>
+                    </div>`;
                 quotesDropdown.appendChild(div);
             });
             quotesDropdown.style.display = 'block';
@@ -149,25 +161,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(allQuotes.length > 0) filterQuotes(e.target.value);
     });
 
-    async function loadQuoteDetails(id) {
+    window.loadQuoteDetails = async function(id) {
         try {
             const res = await fetch(`${API_URL}/billing/quote/${id}`);
             const data = await res.json();
             if(data.success) {
                 const q = data.data;
                 activeQuoteId = q.id;
-                
-                // Seleccionar Cliente
                 selectClient(q.cliente);
-                
-                // Cargar Items
                 currentItems = q.items.map(item => ({
                     catalogo_id: item.catalogo_id,
                     nombre: item.item_nombre,
                     precio_usd: item.precio_unitario_usd,
                     cantidad: item.cantidad
                 }));
-                
                 renderTable();
                 searchQuote.value = q.nro_cotizacion;
                 quotesDropdown.style.display = 'none';
@@ -176,6 +183,57 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (error) {
             alert("Error al cargar detalles de la cotización");
+        }
+    };
+
+    window.loadQuoteItemsOnly = async function(id) {
+        try {
+            const res = await fetch(`${API_URL}/billing/quote/${id}`);
+            const data = await res.json();
+            if(data.success) {
+                const q = data.data;
+                currentItems = q.items.map(item => ({
+                    catalogo_id: item.catalogo_id,
+                    nombre: item.item_nombre,
+                    precio_usd: item.precio_unitario_usd,
+                    cantidad: item.cantidad
+                }));
+                renderTable();
+                searchQuote.value = `Ítems de ${q.nro_cotizacion}`;
+                quotesDropdown.style.display = 'none';
+                alert(`${q.items.length} ítem(s) cargados de ${q.nro_cotizacion}.\nAhora selecciona el cliente para esta nueva cotización.`);
+            }
+        } catch (error) {
+            alert("Error al cargar ítems de la cotización");
+        }
+    };
+
+    async function loadFromUrl() {
+        const urlP = new URLSearchParams(window.location.search);
+        const fromQuote = urlP.get('from_quote');
+        const fromInvoice = urlP.get('from_invoice');
+        const fromNota = urlP.get('from_nota');
+        if (fromQuote) await window.loadQuoteItemsOnly(fromQuote);
+        if (fromInvoice || fromNota) {
+            const endpoint = fromInvoice
+                ? `${API_URL}/billing/invoice/${fromInvoice}`
+                : `${API_URL}/notas-entrega/${fromNota}`;
+            try {
+                const res = await fetch(endpoint);
+                const data = await res.json();
+                if (data.success) {
+                    const doc = data.data;
+                    currentItems = doc.items.map(item => ({
+                        catalogo_id: item.catalogo_id,
+                        nombre: item.item_nombre,
+                        precio_usd: item.precio_unitario_usd,
+                        cantidad: item.cantidad
+                    }));
+                    renderTable();
+                    searchQuote.value = `Ítems de ${fromInvoice ? doc.nro_factura : doc.nro_nota_entrega}`;
+                    alert(`${doc.items.length} ítem(s) cargados. Selecciona el cliente para continuar.`);
+                }
+            } catch (e) { console.error(e); }
         }
     }
 
@@ -355,7 +413,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         window.location.href = `print_quote.html?id=${data.data.id}`;
                     }
                 } else {
-                    alert(`¡Factura Fiscal generada exitosamente! \n\nUSD: $${formatVez(totalUsd)}\nBolívares: Bs.${formatVez(totalVes)}`);
+                    if (confirm(`¡Factura Fiscal generada exitosamente!\n\nNro: ${data.nro_factura}\nUSD: $${formatVez(totalUsd)}\nBolívares: Bs.${formatVez(totalVes)}\n\n¿Abrir vista de impresión?`)) {
+                        window.open(`print_invoice.html?id=${data.id}`, '_blank');
+                    }
                 }
 
                 // Limpiar
