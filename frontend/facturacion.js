@@ -213,28 +213,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         const fromQuote = urlP.get('from_quote');
         const fromInvoice = urlP.get('from_invoice');
         const fromNota = urlP.get('from_nota');
-        if (fromQuote) await window.loadQuoteItemsOnly(fromQuote);
-        if (fromInvoice || fromNota) {
-            const endpoint = fromInvoice
-                ? `${API_URL}/billing/invoice/${fromInvoice}`
-                : `${API_URL}/notas-entrega/${fromNota}`;
-            try {
-                const res = await fetch(endpoint);
-                const data = await res.json();
-                if (data.success) {
-                    const doc = data.data;
-                    currentItems = doc.items.map(item => ({
-                        catalogo_id: item.catalogo_id,
-                        nombre: item.item_nombre,
-                        precio_usd: item.precio_unitario_usd,
-                        cantidad: item.cantidad
-                    }));
-                    renderTable();
-                    searchQuote.value = `Ítems de ${fromInvoice ? doc.nro_factura : doc.nro_nota_entrega}`;
-                    alert(`${doc.items.length} ítem(s) cargados. Selecciona el cliente para continuar.`);
-                }
-            } catch (e) { console.error(e); }
-        }
+
+        let endpoint = null;
+        if (fromQuote) endpoint = `${API_URL}/billing/quote/${fromQuote}`;
+        else if (fromInvoice) endpoint = `${API_URL}/billing/invoice/${fromInvoice}`;
+        else if (fromNota) endpoint = `${API_URL}/notas-entrega/${fromNota}`;
+        if (!endpoint) return;
+
+        try {
+            const res = await fetch(endpoint);
+            const data = await res.json();
+            if (data.success) {
+                const doc = data.data;
+                currentItems = doc.items.map(item => ({
+                    catalogo_id: item.catalogo_id,
+                    nombre: item.item_nombre,
+                    precio_usd: item.precio_unitario_usd,
+                    cantidad: item.cantidad
+                }));
+                const nro = doc.nro_cotizacion || doc.nro_factura || doc.nro_nota_entrega || '';
+                searchQuote.value = `Ítems de ${nro}`;
+                renderTable();
+                alert(`${doc.items.length} ítem(s) cargados de ${nro}.\nSelecciona el cliente para continuar.`);
+            }
+        } catch (e) { console.error(e); }
     }
 
     // ======== AUTOCOMPLETADO DE CLIENTES ========
