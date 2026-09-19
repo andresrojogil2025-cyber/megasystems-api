@@ -4,6 +4,7 @@ let catalogoCache = [];
 let itemsCompra = [];    // [{catalogo_id, nombre_item, cantidad, costo_usd}]
 let facturaFile = null;
 let searchTimeout = null;
+let historialData = [];
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -199,10 +200,67 @@ function agregarItem(catalogoId, nombre, precioRef) {
     renderItems();
 }
 
+function catalogoColHTML(item, i) {
+    if (item.catalogo_id) {
+        const cat = catalogoCache.find(c => c.id === item.catalogo_id);
+        const nombre = cat ? (cat.nombre.length > 20 ? cat.nombre.substring(0,20)+'…' : cat.nombre) : '✓';
+        return `<span style="background:#dcfce7;color:#16a34a;padding:3px 8px;border-radius:8px;font-size:0.72rem;font-weight:700;display:inline-block;">✓ ${nombre}</span>`;
+    }
+    if (item.crear_en_catalogo) {
+        return `<div style="display:flex;gap:4px;align-items:center;">
+            <span style="background:#fef9c3;color:#854d0e;padding:2px 6px;border-radius:6px;font-size:0.7rem;font-weight:700;">NUEVO</span>
+            <input type="number" placeholder="Precio $" step="0.01" min="0" value="${item.precio_venta||''}"
+                onchange="itemsCompra[${i}].precio_venta=parseFloat(this.value)||0"
+                style="width:78px;padding:3px 6px;border:1.5px solid #fde047;border-radius:6px;font-size:0.82rem;">
+            <button onclick="itemsCompra[${i}].crear_en_catalogo=false;renderItems()" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:15px;padding:0;line-height:1;">✕</button>
+        </div>`;
+    }
+    if (item.catalogo_match) {
+        const m = item.catalogo_match;
+        const mNombre = m.nombre.length > 18 ? m.nombre.substring(0,18)+'…' : m.nombre;
+        return `<div>
+            <div style="color:#0369a1;font-size:0.72rem;margin-bottom:3px;">🔍 ${mNombre}</div>
+            <div style="display:flex;gap:3px;">
+                <button onclick="vincularACatalogo(${i},${m.id})" style="background:#0ea5e9;color:#fff;border:none;border-radius:6px;padding:2px 8px;font-size:0.7rem;cursor:pointer;font-weight:600;">Vincular</button>
+                <button onclick="itemsCompra[${i}].catalogo_match=null;itemsCompra[${i}].crear_en_catalogo=true;renderItems()" style="background:#f1f5f9;color:#475569;border:none;border-radius:6px;padding:2px 7px;font-size:0.7rem;cursor:pointer;">Nuevo</button>
+            </div>
+        </div>`;
+    }
+    return `<button onclick="itemsCompra[${i}].crear_en_catalogo=true;renderItems()"
+        style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:4px 9px;font-size:0.72rem;cursor:pointer;font-weight:600;">
+        <i class="ph ph-plus"></i> Al catálogo</button>`;
+}
+
+function vincularACatalogo(i, catId) {
+    itemsCompra[i].catalogo_id = catId;
+    itemsCompra[i].crear_en_catalogo = false;
+    itemsCompra[i].catalogo_match = null;
+    renderItems();
+}
+
+function buscarMatchesCatalogo() {
+    for (const item of itemsCompra) {
+        if (item.catalogo_id || item._matchBuscado) continue;
+        item._matchBuscado = true;
+        const palabras = item.nombre_item.toLowerCase()
+            .replace(/[^a-záéíóúñ0-9\s]/gi, ' ')
+            .split(/\s+/)
+            .filter(w => w.length > 3)
+            .slice(0, 5);
+        if (!palabras.length) { item.catalogo_match = null; continue; }
+        const match = catalogoCache.find(c => {
+            const cn = c.nombre.toLowerCase();
+            const hits = palabras.filter(w => cn.includes(w));
+            return hits.length >= Math.min(2, palabras.length);
+        });
+        item.catalogo_match = match || null;
+    }
+}
+
 function renderItems() {
     const tbody = document.getElementById('itemsBody');
     if (!itemsCompra.length) {
-        tbody.innerHTML = '<tr id="emptyItemsRow"><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">Agrega productos usando el buscador de arriba.</td></tr>';
+        tbody.innerHTML = '<tr id="emptyItemsRow"><td colspan="6" style="text-align:center;color:#94a3b8;padding:20px;">Agrega productos usando el buscador de arriba.</td></tr>';
         actualizarTotal();
         return;
     }
@@ -212,6 +270,7 @@ function renderItems() {
             <td><input type="number" min="1" value="${item.cantidad}" onchange="updateItemCant(${i}, this.value)"></td>
             <td><input type="number" class="wide" step="0.01" min="0" value="${parseFloat(item.costo_usd).toFixed(2)}" onchange="updateItemCosto(${i}, this.value)"></td>
             <td style="font-weight:600; color:#16a34a;">$${(item.cantidad * item.costo_usd).toFixed(2)}</td>
+            <td>${catalogoColHTML(item, i)}</td>
             <td><button class="btn btn-danger btn-sm" onclick="quitarItem(${i})"><i class="ph ph-x"></i></button></td>
         </tr>
     `).join('');
@@ -398,10 +457,15 @@ function agregarSeleccionadosACompra() {
                 catalogo_id: null,
                 nombre_item: desc,
                 cantidad: item.cantidad || 1,
-                costo_usd: item.costo_usd || 0
+                costo_usd: item.costo_usd || 0,
+                _matchBuscado: false,
+                catalogo_match: null,
+                crear_en_catalogo: false,
+                precio_venta: ''
             });
         }
     });
+    buscarMatchesCatalogo();
 
     renderItems();
     document.getElementById('facturaItemsPanel').style.display = 'none';
@@ -451,25 +515,45 @@ function cancelarCompra() {
 async function guardarCompra() {
     if (!itemsCompra.length) { alert('Agrega al menos un producto a la compra.'); return; }
 
-    const fd = new FormData();
-    fd.append('proveedor_id', document.getElementById('cProveedorId').value || '');
-    fd.append('fecha_compra', document.getElementById('cFecha').value || '');
-    fd.append('factura_proveedor', document.getElementById('cFactura').value.trim());
-    fd.append('notas', document.getElementById('cNotas').value.trim());
-    fd.append('items', JSON.stringify(itemsCompra));
-    if (facturaFile) fd.append('factura', facturaFile);
-
     const btn = document.querySelector('#formCompraPanel .btn-green');
     btn.disabled = true;
     btn.innerHTML = '<i class="ph ph-spinner"></i> Guardando...';
 
     try {
+        // 1. Crear en catálogo los ítems marcados como nuevos
+        const nuevos = itemsCompra.filter(it => it.crear_en_catalogo && !it.catalogo_id);
+        for (const item of nuevos) {
+            const precioVenta = parseFloat(item.precio_venta) || 0;
+            const rc = await fetch('/api/catalogo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tipo: 'producto',
+                    nombre: item.nombre_item,
+                    precio_usd: precioVenta,
+                    stock: parseInt(item.cantidad) || 0
+                })
+            });
+            const dc = await rc.json();
+            if (dc.id) { item.catalogo_id = dc.id; item.crear_en_catalogo = false; }
+        }
+
+        // 2. Guardar la compra
+        const fd = new FormData();
+        fd.append('proveedor_id', document.getElementById('cProveedorId').value || '');
+        fd.append('fecha_compra', document.getElementById('cFecha').value || '');
+        fd.append('factura_proveedor', document.getElementById('cFactura').value.trim());
+        fd.append('notas', document.getElementById('cNotas').value.trim());
+        fd.append('items', JSON.stringify(itemsCompra));
+        if (facturaFile) fd.append('factura', facturaFile);
+
         const r = await fetch('/api/compras', { method: 'POST', body: fd });
         const d = await r.json();
         if (!d.success) throw new Error(d.error || 'Error al guardar');
+        await cargarCatalogo();
         cancelarCompra();
         cargarHistorial();
-        alert(`✅ Compra ${d.codigo} registrada correctamente.`);
+        alert(`✅ Compra ${d.codigo} registrada. ${nuevos.length ? nuevos.length + ' producto(s) nuevos agregados al catálogo.' : ''}`);
     } catch (e) {
         alert('Error: ' + e.message);
         btn.disabled = false;
@@ -489,6 +573,7 @@ async function cargarHistorial() {
 }
 
 function renderHistorial(compras) {
+    historialData = compras;
     const wrap = document.getElementById('listaCompras');
     if (!compras.length) {
         wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No hay compras registradas todavía.</p>';
@@ -498,14 +583,19 @@ function renderHistorial(compras) {
         const fecha = c.fecha_compra ? new Date(c.fecha_compra).toLocaleDateString('es-VE') : '—';
         const proveedor = c.proveedor_nombre || 'Sin proveedor';
         const total = parseFloat(c.total_usd || 0).toFixed(2);
-        const itemsHTML = (c.items || []).map(it => `
-            <tr>
+        const sinCatalogo = (c.items || []).filter(it => !it.catalogo_id);
+        const itemsHTML = (c.items || []).map(it => {
+            const catBtn = it.catalogo_id
+                ? `<span style="background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;"><i class="ph ph-check-circle"></i> En catálogo</span>`
+                : `<button class="btn btn-sm" id="btn-cat-${it.id}" onclick="abrirModalItemCatalogo(${it.id},${JSON.stringify(it.nombre_item)},${it.cantidad},${parseFloat(it.costo_usd||0)})" style="background:#16a34a;color:#fff;font-size:0.75rem;padding:4px 9px;"><i class="ph ph-package"></i> Al catálogo</button>`;
+            return `<tr>
                 <td>${it.nombre_item}</td>
                 <td style="text-align:center;">${it.cantidad}</td>
                 <td style="text-align:right;">$${parseFloat(it.costo_usd||0).toFixed(2)}</td>
                 <td style="text-align:right;font-weight:600;">$${parseFloat(it.subtotal_usd||0).toFixed(2)}</td>
-            </tr>
-        `).join('');
+                <td style="text-align:center;width:130px;">${catBtn}</td>
+            </tr>`;
+        }).join('');
 
         let facturaHTML = '';
         if (c.factura_imagen) {
@@ -538,15 +628,17 @@ function renderHistorial(compras) {
             </div>
             <div class="compra-card-body" id="cc-${c.id}">
                 ${c.notas ? `<p style="color:#64748b;margin-bottom:12px;font-size:0.88rem;"><i class="ph ph-note"></i> ${c.notas}</p>` : ''}
+                ${sinCatalogo.length ? `<div style="margin-bottom:10px;"><button class="btn btn-green btn-sm" onclick="agregarTodosAlCatalogo(${c.id})"><i class="ph ph-package"></i> Agregar todos al catálogo (${sinCatalogo.length})</button></div>` : ''}
                 <table class="items-table">
                     <thead><tr>
                         <th>Producto</th><th style="text-align:center;width:60px;">Cant.</th>
                         <th style="text-align:right;width:100px;">Costo USD</th>
                         <th style="text-align:right;width:100px;">Subtotal</th>
+                        <th style="text-align:center;width:130px;">Catálogo</th>
                     </tr></thead>
                     <tbody>${itemsHTML}</tbody>
                     <tfoot><tr>
-                        <td colspan="3" style="text-align:right;font-weight:700;padding:8px 12px;">Total:</td>
+                        <td colspan="4" style="text-align:right;font-weight:700;padding:8px 12px;">Total:</td>
                         <td style="text-align:right;font-weight:800;color:#16a34a;padding:8px 12px;">$${total}</td>
                     </tr></tfoot>
                 </table>
@@ -575,4 +667,66 @@ async function subirFacturaExistente(compraId, input) {
     } catch (e) {
         alert('Error subiendo factura: ' + e.message);
     }
+}
+
+// ── Agregar ítems del historial al catálogo ───────────────────────────────────
+function abrirModalItemCatalogo(itemId, nombre, cantidad, costoUsd) {
+    document.getElementById('itemCatItemId').value = itemId;
+    document.getElementById('itemCatNombre').value = nombre;
+    document.getElementById('itemCatTipo').value = 'producto';
+    document.getElementById('itemCatPrecio').value = '';
+    document.getElementById('itemCatStock').value = cantidad;
+    document.getElementById('modalItemCatalogo').classList.add('open');
+    setTimeout(() => document.getElementById('itemCatPrecio').focus(), 100);
+}
+
+function cerrarModalItemCatalogo() {
+    document.getElementById('modalItemCatalogo').classList.remove('open');
+}
+
+async function guardarItemEnCatalogo() {
+    const itemId = document.getElementById('itemCatItemId').value;
+    const nombre = document.getElementById('itemCatNombre').value.trim();
+    const tipo = document.getElementById('itemCatTipo').value;
+    const precio_usd = parseFloat(document.getElementById('itemCatPrecio').value);
+    const stock = parseInt(document.getElementById('itemCatStock').value) || 0;
+    if (!nombre) { alert('El nombre es obligatorio'); return; }
+    if (isNaN(precio_usd) || precio_usd < 0) { alert('Ingresa un precio de venta válido'); return; }
+    try {
+        const r = await fetch(`/api/compras/items/${itemId}/al-catalogo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre, tipo, precio_usd, stock })
+        });
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error || 'Error');
+        cerrarModalItemCatalogo();
+        await cargarCatalogo();
+        await cargarHistorial();
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+async function agregarTodosAlCatalogo(compraId) {
+    const compra = historialData.find(c => c.id === compraId);
+    if (!compra) return;
+    const sinCatalogo = (compra.items || []).filter(it => !it.catalogo_id);
+    if (!sinCatalogo.length) { alert('Todos los ítems ya están en el catálogo.'); return; }
+    if (!confirm(`Se agregarán ${sinCatalogo.length} producto(s) al catálogo.\nEl precio de venta inicial será igual al costo de la factura.\nPodrás editarlo después en el módulo Catálogo.\n\n¿Continuar?`)) return;
+    let ok = 0, err = 0;
+    for (const it of sinCatalogo) {
+        try {
+            const r = await fetch(`/api/compras/items/${it.id}/al-catalogo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre: it.nombre_item, tipo: 'producto', precio_usd: parseFloat(it.costo_usd)||0, stock: parseInt(it.cantidad)||0 })
+            });
+            const d = await r.json();
+            if (d.success) ok++; else err++;
+        } catch { err++; }
+    }
+    alert(`${ok} producto(s) agregados al catálogo.${err ? `\n${err} con error.` : ''}\n\nRecuerda editar los precios de venta en el Catálogo.`);
+    await cargarCatalogo();
+    await cargarHistorial();
 }

@@ -170,15 +170,16 @@
                         <th style="width:80px;">Cant.</th>
                         <th style="width:110px;">Costo USD</th>
                         <th style="width:110px;">Subtotal</th>
+                        <th style="width:180px;">Catálogo / Inventario</th>
                         <th style="width:40px;"></th>
                     </tr>
                 </thead>
                 <tbody id="itemsBody">
-                    <tr id="emptyItemsRow"><td colspan="5" style="text-align:center; color:#94a3b8; padding:20px;">Agrega productos usando el buscador de arriba.</td></tr>
+                    <tr id="emptyItemsRow"><td colspan="6" style="text-align:center; color:#94a3b8; padding:20px;">Agrega productos usando el buscador de arriba.</td></tr>
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="3" style="text-align:right; font-weight:700; padding:10px 12px;">Total USD:</td>
+                        <td colspan="4" style="text-align:right; font-weight:700; padding:10px 12px;">Total USD:</td>
                         <td style="font-weight:800; color:#16a34a; padding:10px 12px;" id="totalUSD">$0.00</td>
                         <td></td>
                     </tr>
@@ -337,6 +338,37 @@
     <div class="img-viewer-overlay" id="imgViewer" onclick="cerrarVisorImagen()">
         <button class="img-viewer-close" onclick="cerrarVisorImagen()">✕</button>
         <img id="imgViewerSrc" src="" alt="Factura">
+    </div>
+
+    <!-- Modal: Agregar ítem al catálogo desde historial -->
+    <div class="modal-overlay" id="modalItemCatalogo">
+        <div class="modal-box" style="width:420px;">
+            <h3><i class="ph ph-package"></i> Agregar al Catálogo</h3>
+            <input type="hidden" id="itemCatItemId">
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Nombre del producto</label>
+                <input type="text" id="itemCatNombre">
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Tipo</label>
+                <select id="itemCatTipo">
+                    <option value="producto">Producto (Tangible)</option>
+                    <option value="servicio">Servicio</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Precio de Venta (USD) <span style="color:#94a3b8;font-weight:400;font-size:0.78rem;">— tú lo defines</span></label>
+                <input type="number" id="itemCatPrecio" step="0.01" min="0" placeholder="0.00">
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Stock inicial</label>
+                <input type="number" id="itemCatStock" min="0" style="background:#f8fafc;" readonly>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="cerrarModalItemCatalogo()">Cancelar</button>
+                <button class="btn btn-green" onclick="guardarItemEnCatalogo()"><i class="ph ph-check"></i> Agregar</button>
+            </div>
+        </div>
     </div>
 
     <script src="compras.js"></script>

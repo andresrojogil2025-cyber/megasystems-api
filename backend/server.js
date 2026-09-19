@@ -96,8 +96,9 @@ app.delete('/api/proveedores/:id', proveedoresController.delete);
 
 app.get('/api/compras', comprasController.getAll);
 app.post('/api/compras', comprasController.upload, comprasController.create);
-app.post('/api/compras/:id/factura', comprasController.upload, comprasController.uploadFactura);
 app.post('/api/compras/parse-factura', comprasController.uploadMemoryMiddleware, comprasController.parseFactura);
+app.post('/api/compras/:id/factura', comprasController.upload, comprasController.uploadFactura);
+app.post('/api/compras/items/:itemId/al-catalogo', comprasController.addItemToCatalogo);
 
 // Rutas de Retenciones
 app.get('/api/retenciones', retencionesController.getAll);

@@ -294,6 +294,28 @@ const comprasController = {
         } catch (e) {
             res.status(500).json({ success: false, error: e.message });
         }
+    },
+
+    addItemToCatalogo: async (req, res) => {
+        try {
+            const { itemId } = req.params;
+            const { nombre, tipo, precio_usd, stock } = req.body;
+            const items = await queryAsync('SELECT * FROM compras_items WHERE id = ?', [itemId]);
+            if (!items.length) return res.status(404).json({ success: false, error: 'Ítem no encontrado' });
+            const item = items[0];
+            if (item.catalogo_id) return res.json({ success: true, catalogo_id: item.catalogo_id, message: 'Ya está en catálogo' });
+            const finalStock = tipo === 'servicio' ? null : (parseInt(stock) || 0);
+            const r = await runAsync(
+                'INSERT INTO catalogo (tipo, nombre, precio_usd, stock) VALUES (?, ?, ?, ?)',
+                [tipo || 'producto', nombre, parseFloat(precio_usd) || 0, finalStock]
+            );
+            const catalogoId = r.lastID;
+            await runAsync('UPDATE compras_items SET catalogo_id = ? WHERE id = ?', [catalogoId, itemId]);
+            res.json({ success: true, catalogo_id: catalogoId });
+        } catch (e) {
+            console.error('[addItemToCatalogo]', e.message);
+            res.status(500).json({ success: false, error: e.message });
+        }
     }
 };
 
