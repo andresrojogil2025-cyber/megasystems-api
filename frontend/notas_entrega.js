@@ -100,6 +100,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadDBs();
     selectedClientBox.style.display = 'none';
 
+    // Cargar ítems desde historial (sessionStorage)
+    const preloadItems = sessionStorage.getItem('preload_items');
+    if (preloadItems) {
+        const items = JSON.parse(preloadItems);
+        const nro = sessionStorage.getItem('preload_from') || '';
+        sessionStorage.removeItem('preload_items');
+        sessionStorage.removeItem('preload_from');
+        currentItems = items;
+        renderTable();
+        alert(`${items.length} ítem(s) cargados de ${nro}.\nSelecciona el cliente para continuar.`);
+    }
+
     // ======== AUTOCOMPLETADO DE CLIENTES ========
     searchClient.addEventListener('input', (e) => {
         const val = e.target.value.toLowerCase();

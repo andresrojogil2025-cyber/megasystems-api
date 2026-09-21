@@ -211,6 +211,28 @@
             </div>
         </div>
 
+        <!-- MODAL DESTINO -->
+        <div id="modalDestino" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:999;align-items:center;justify-content:center;">
+            <div style="background:white;border-radius:12px;padding:28px 32px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+                <h3 style="margin:0 0 6px;font-size:1.1rem;color:#111827;">¿Dónde cargar los ítems?</h3>
+                <p style="margin:0 0 20px;font-size:0.88rem;color:#6b7280;">Selecciona el tipo de documento que deseas crear con estos ítems.</p>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <button onclick="confirmarDestino('facturacion.html')" style="padding:12px;border-radius:8px;border:none;background:#1e3a8a;color:white;font-size:0.95rem;font-weight:600;cursor:pointer;text-align:left;">
+                        📄 Cotización / Presupuesto
+                    </button>
+                    <button onclick="confirmarDestino('facturacion.html')" style="padding:12px;border-radius:8px;border:none;background:#065f46;color:white;font-size:0.95rem;font-weight:600;cursor:pointer;text-align:left;">
+                        🧾 Factura Fiscal
+                    </button>
+                    <button onclick="confirmarDestino('notas_entrega.html')" style="padding:12px;border-radius:8px;border:none;background:#7c3aed;color:white;font-size:0.95rem;font-weight:600;cursor:pointer;text-align:left;">
+                        🚚 Nota de Entrega
+                    </button>
+                    <button onclick="cerrarModalDestino()" style="padding:10px;border-radius:8px;border:1px solid #d1d5db;background:white;color:#374151;font-size:0.9rem;cursor:pointer;">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- TAB: NOTAS DE ENTREGA -->
         <div id="panel-notas" class="tab-panel">
             <div class="toolbar">
@@ -403,16 +425,52 @@
     }
 
     // ── USAR ÍTEMS ────────────────────────────────────────────────────────────
+    let _pendingItems = null;
+    let _pendingNro = '';
+
+    async function cargarYMostrarModal(endpoint, nroField) {
+        try {
+            const res = await fetch(endpoint);
+            const data = await res.json();
+            if (!data.success) { alert('Error al cargar el documento.'); return; }
+            const doc = data.data;
+            _pendingItems = doc.items.map(item => ({
+                catalogo_id: item.catalogo_id,
+                nombre: item.item_nombre,
+                precio_usd: item.precio_unitario_usd,
+                cantidad: item.cantidad
+            }));
+            _pendingNro = doc[nroField] || '';
+            document.getElementById('modalDestino').style.display = 'flex';
+        } catch (e) {
+            alert('Error de conexión.');
+        }
+    }
+
+    window.confirmarDestino = function(pagina) {
+        if (!_pendingItems) return;
+        sessionStorage.setItem('preload_items', JSON.stringify(_pendingItems));
+        sessionStorage.setItem('preload_from', _pendingNro);
+        document.getElementById('modalDestino').style.display = 'none';
+        window.location.href = pagina;
+    };
+
+    window.cerrarModalDestino = function() {
+        document.getElementById('modalDestino').style.display = 'none';
+        _pendingItems = null;
+        _pendingNro = '';
+    };
+
     function usarItemsCotizacion(id) {
-        window.location.href = `facturacion.html?from_quote=${id}`;
+        cargarYMostrarModal(`${API_URL}/billing/quote/${id}`, 'nro_cotizacion');
     }
 
     function usarItemsFactura(id) {
-        window.location.href = `facturacion.html?from_invoice=${id}`;
+        cargarYMostrarModal(`${API_URL}/billing/invoice/${id}`, 'nro_factura');
     }
 
     function usarItemsNota(id) {
-        window.location.href = `facturacion.html?from_nota=${id}`;
+        cargarYMostrarModal(`${API_URL}/notas-entrega/${id}`, 'nro_nota_entrega');
     }
 
     // ── INIT ──────────────────────────────────────────────────────────────────
