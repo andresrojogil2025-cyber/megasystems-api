@@ -183,14 +183,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    window.updatePrice = (id, elm) => {
+    window.updatePriceUsd = (id, elm) => {
         const item = currentItems.find(i => i.catalogo_id === id);
-        if (item) {
-            let val = parseFloat(elm.value);
-            if (isNaN(val) || val < 0) val = 0;
-            item.precio_usd = val;
-            renderTable();
-        }
+        if (!item) return;
+        let val = parseFloat(elm.value);
+        if (isNaN(val) || val < 0) val = 0;
+        item.precio_usd = val;
+        renderTable();
+    };
+
+    window.updatePriceVes = (id, elm) => {
+        const item = currentItems.find(i => i.catalogo_id === id);
+        if (!item) return;
+        let valVes = parseFloat(elm.value);
+        if (isNaN(valVes) || valVes < 0) valVes = 0;
+        item.precio_usd = rate > 0 ? +(valVes / rate).toFixed(4) : 0;
+        renderTable();
     };
 
     window.deleteItem = (id) => {
@@ -218,10 +226,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             tr.innerHTML = `
                 <td><strong>${item.nombre}</strong></td>
                 <td>
-                    <input type="number" step="0.01" min="0" value="${item.precio_usd}"
-                           onchange="updatePrice(${item.catalogo_id}, this)"
-                           style="width:75px; padding:4px 6px; border:1px solid #d1d5db; border-radius:5px; font-weight:600; color:var(--color-secondary);">
-                    <br><small style="color:#9ca3af; font-size:0.78rem;">Bs. ${formatVez(priceVes)}</small>
+                    <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                        <span style="font-size:0.75rem;color:#6b7280;font-weight:600;">$</span>
+                        <input type="number" step="0.01" min="0" value="${item.precio_usd.toFixed(2)}"
+                               onchange="updatePriceUsd(${item.catalogo_id}, this)"
+                               style="width:80px;padding:4px 6px;border:1px solid #d1d5db;border-radius:5px;font-weight:600;color:var(--color-secondary);">
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <span style="font-size:0.75rem;color:#1d4ed8;font-weight:600;">Bs.</span>
+                        <input type="number" step="0.01" min="0" value="${priceVes.toFixed(2)}"
+                               onchange="updatePriceVes(${item.catalogo_id}, this)"
+                               style="width:100px;padding:4px 6px;border:1px solid #bfdbfe;border-radius:5px;font-weight:500;color:#1d4ed8;font-size:0.85rem;">
+                    </div>
                 </td>
                 <td><input type="number" class="qty" value="${item.cantidad}" onchange="updateQty(${item.catalogo_id}, this)"></td>
                 <td style="font-weight:600;">
