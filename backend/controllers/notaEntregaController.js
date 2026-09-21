@@ -15,11 +15,12 @@ const notaEntregaController = {
             const itemsProcessed = [];
 
             for (let item of items) {
-                const row = await db.queryAsync('SELECT precio_usd, tipo, stock FROM catalogo WHERE id = ?', [item.catalogo_id]);
+                // Solo consultar tipo y stock del catálogo; el precio lo define el usuario
+                const row = await db.queryAsync('SELECT tipo, stock FROM catalogo WHERE id = ?', [item.catalogo_id]);
                 if (row.length > 0) {
-                    const precio = row[0].precio_usd;
-                    subtotal_usd += (item.cantidad * precio);
-                    itemsProcessed.push({ ...item, precio_usd: precio, tipo: row[0].tipo, currentStock: row[0].stock });
+                    const precio_usd = parseFloat(item.precio_usd) || 0;
+                    subtotal_usd += item.cantidad * precio_usd;
+                    itemsProcessed.push({ ...item, precio_usd, tipo: row[0].tipo, currentStock: row[0].stock });
                 }
             }
 
@@ -32,9 +33,17 @@ const notaEntregaController = {
             if (descuento_usd > subtotal_usd) descuento_usd = subtotal_usd;
 
             const total_usd = subtotal_usd - descuento_usd;
-            const subtotal_ves = tasa_bcv_final ? subtotal_usd * tasa_bcv_final : null;
-            const total_ves = tasa_bcv_final ? total_usd * tasa_bcv_final : null;
-            const descuento_ves = tasa_bcv_final ? descuento_usd * tasa_bcv_final : null;
+
+            // Calcular totales en Bs usando precio_ves exacto por ítem si el usuario lo definió
+            const subtotal_ves = tasa_bcv_final ? itemsProcessed.reduce((sum, it) => {
+                const pVes = it.precio_ves != null ? parseFloat(it.precio_ves) : it.precio_usd * tasa_bcv_final;
+                return sum + pVes * it.cantidad;
+            }, 0) : null;
+
+            const descuento_ves = descuento_moneda === 'VES'
+                ? montoIngresado
+                : (tasa_bcv_final ? descuento_usd * tasa_bcv_final : null);
+            const total_ves = subtotal_ves !== null ? Math.max(0, subtotal_ves - (descuento_ves || 0)) : null;
 
             // Generar número correlativo (Nota de Entrega)
             const countRow = await db.queryAsync('SELECT COUNT(*) as count FROM notas_entrega');
@@ -48,8 +57,11 @@ const notaEntregaController = {
 
             for (let item of itemsProcessed) {
                 const itemTotalUsd = item.cantidad * item.precio_usd;
-                const precioVes = tasa_bcv_final ? item.precio_usd * tasa_bcv_final : null;
-                const itemTotalVes = tasa_bcv_final ? itemTotalUsd * tasa_bcv_final : null;
+                // Usar precio_ves exacto si el usuario lo ingresó, si no calcular desde USD
+                const precioVes = item.precio_ves != null
+                    ? parseFloat(item.precio_ves)
+                    : (tasa_bcv_final ? item.precio_usd * tasa_bcv_final : null);
+                const itemTotalVes = precioVes !== null ? precioVes * item.cantidad : null;
 
                 await db.runAsync(
                     'INSERT INTO nota_entrega_detalles (nota_entrega_id, catalogo_id, cantidad, precio_unitario_usd, precio_unitario_ves, total_usd, total_ves) VALUES (?, ?, ?, ?, ?, ?, ?)',

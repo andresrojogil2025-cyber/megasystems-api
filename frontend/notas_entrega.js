@@ -209,14 +209,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const item = currentItems.find(i => i.catalogo_id === id);
         if (!item) return;
         item.precio_usd = parseVez(elm.value);
+        delete item.precio_ves;  // USD es la fuente; recalcular Bs desde tasa
         renderTable();
     };
 
     window.updatePriceVes = (id, elm) => {
         const item = currentItems.find(i => i.catalogo_id === id);
         if (!item) return;
-        const valVes = parseVez(elm.value);
-        item.precio_usd = rate > 0 ? +(valVes / rate).toFixed(4) : 0;
+        item.precio_ves = parseVez(elm.value);  // guardar Bs exacto, sin conversión
+        item.precio_usd = rate > 0 ? +(item.precio_ves / rate).toFixed(4) : 0;
         renderTable();
     };
 
@@ -238,8 +239,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentItems.forEach(item => {
             const pUsd = parseFloat(item.precio_usd) || 0;
             const lineUsd = pUsd * item.cantidad;
-            const priceVes = pUsd * rate;
-            const lineVes = lineUsd * rate;
+            // Si el usuario ingresó Bs directamente, usar ese valor exacto
+            const priceVes = item.precio_ves !== undefined ? item.precio_ves : pUsd * rate;
+            const lineVes = priceVes * item.cantidad;
+            const bsRaw = item.precio_ves !== undefined ? item.precio_ves : +(priceVes).toFixed(2);
             subUsd += lineUsd;
 
             const tr = document.createElement('tr');
@@ -256,7 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div style="display:flex;align-items:center;gap:4px;">
                         <span style="font-size:0.75rem;color:#1d4ed8;font-weight:600;">Bs.</span>
                         <input type="text" inputmode="text" value="${formatVez(priceVes)}"
-                               onfocus="this.value='${+(priceVes).toFixed(2)}'"
+                               onfocus="this.value='${bsRaw}'"
                                onblur="updatePriceVes(${item.catalogo_id}, this)"
                                style="width:100px;padding:4px 6px;border:1px solid #bfdbfe;border-radius:5px;font-weight:500;color:#1d4ed8;font-size:0.85rem;">
                     </div>
@@ -277,17 +280,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     function calculateTotals(subtotalUsd) {
         currentSubtotalUsd = subtotalUsd;
 
-        document.getElementById('totSubUsd').innerText = formatVez(subtotalUsd);
-        document.getElementById('totSubVes').innerText = rate > 0 ? formatVez(subtotalUsd * rate) : "0,00";
+        // Sumar Bs directamente desde los ítems (sin pasar por USD * tasa, para evitar redondeos)
+        const subtotalVes = currentItems.reduce((sum, item) => {
+            const p = item.precio_ves !== undefined
+                ? item.precio_ves
+                : (parseFloat(item.precio_usd) || 0) * rate;
+            return sum + p * (parseInt(item.cantidad) || 0);
+        }, 0);
 
-        // Convertir el descuento ingresado (en USD o VES) a USD, moneda canónica interna
+        document.getElementById('totSubUsd').innerText = formatVez(subtotalUsd);
+        document.getElementById('totSubVes').innerText = rate > 0 ? formatVez(subtotalVes) : "0,00";
+
         const descuentoMonto = parseFloat(descuentoMontoInput.value) || 0;
         const descuentoMoneda = descuentoMonedaSelect.value;
         let descuentoUsd = descuentoMoneda === 'VES' ? (rate > 0 ? descuentoMonto / rate : 0) : descuentoMonto;
+        let descuentoVes = descuentoMoneda === 'VES' ? descuentoMonto : descuentoUsd * rate;
         if (descuentoUsd < 0) descuentoUsd = 0;
 
         const totalUsd = Math.max(0, subtotalUsd - descuentoUsd);
-        const totalVes = rate > 0 ? totalUsd * rate : 0;
+        const totalVes = Math.max(0, subtotalVes - descuentoVes);
 
         document.getElementById('totGrandUsd').innerText = formatVez(totalUsd);
         document.getElementById('totGrandVes').innerText = rate > 0 ? formatVez(totalVes) : "0,00";
