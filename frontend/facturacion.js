@@ -359,13 +359,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
                         <span style="font-size:0.75rem;color:#6b7280;font-weight:600;">$</span>
                         <input type="text" inputmode="text" value="${formatVez(pUsd)}"
-                               onchange="updatePriceUsd(${item.catalogo_id}, this)"
+                               onfocus="this.value='${pUsd}'"
+                               onblur="updatePriceUsd(${item.catalogo_id}, this)"
                                style="width:80px;padding:4px 6px;border:1px solid #d1d5db;border-radius:5px;font-weight:600;color:var(--color-secondary);">
                     </div>
                     <div style="display:flex;align-items:center;gap:4px;">
                         <span style="font-size:0.75rem;color:#1d4ed8;font-weight:600;">Bs.</span>
                         <input type="text" inputmode="text" value="${formatVez(priceVes)}"
-                               onchange="updatePriceVes(${item.catalogo_id}, this)"
+                               onfocus="this.value='${+(priceVes).toFixed(2)}'"
+                               onblur="updatePriceVes(${item.catalogo_id}, this)"
                                style="width:100px;padding:4px 6px;border:1px solid #bfdbfe;border-radius:5px;font-weight:500;color:#1d4ed8;font-size:0.85rem;">
                     </div>
                 </td>
