@@ -195,21 +195,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    function parsePrecio(val) {
-        return parseFloat((val || '').toString().replace(',', '.')) || 0;
+    function parseVez(val) {
+        // Formato venezolano: punto = miles, coma = decimal  (ej: 5.858,04)
+        const clean = (val || '').toString()
+            .replace(/\./g, '')   // quitar separadores de miles
+            .replace(',', '.');   // coma decimal → punto
+        return parseFloat(clean) || 0;
     }
 
     window.updatePriceUsd = (id, elm) => {
         const item = currentItems.find(i => i.catalogo_id === id);
         if (!item) return;
-        item.precio_usd = parsePrecio(elm.value);
+        item.precio_usd = parseVez(elm.value);
         renderTable();
     };
 
     window.updatePriceVes = (id, elm) => {
         const item = currentItems.find(i => i.catalogo_id === id);
         if (!item) return;
-        const valVes = parsePrecio(elm.value);
+        const valVes = parseVez(elm.value);
         item.precio_usd = rate > 0 ? +(valVes / rate).toFixed(4) : 0;
         renderTable();
     };
@@ -242,13 +246,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td>
                     <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
                         <span style="font-size:0.75rem;color:#6b7280;font-weight:600;">$</span>
-                        <input type="text" inputmode="decimal" value="${pUsd.toFixed(2)}"
+                        <input type="text" inputmode="decimal" value="${formatVez(pUsd)}"
                                onchange="updatePriceUsd(${item.catalogo_id}, this)"
                                style="width:80px;padding:4px 6px;border:1px solid #d1d5db;border-radius:5px;font-weight:600;color:var(--color-secondary);">
                     </div>
                     <div style="display:flex;align-items:center;gap:4px;">
                         <span style="font-size:0.75rem;color:#1d4ed8;font-weight:600;">Bs.</span>
-                        <input type="text" inputmode="decimal" value="${priceVes.toFixed(2)}"
+                        <input type="text" inputmode="decimal" value="${formatVez(priceVes)}"
                                onchange="updatePriceVes(${item.catalogo_id}, this)"
                                style="width:100px;padding:4px 6px;border:1px solid #bfdbfe;border-radius:5px;font-weight:500;color:#1d4ed8;font-size:0.85rem;">
                     </div>
