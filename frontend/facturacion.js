@@ -209,34 +209,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     async function loadFromUrl() {
-        const urlP = new URLSearchParams(window.location.search);
-        const fromQuote = urlP.get('from_quote');
-        const fromInvoice = urlP.get('from_invoice');
-        const fromNota = urlP.get('from_nota');
-
-        let endpoint = null;
-        if (fromQuote) endpoint = `${API_URL}/billing/quote/${fromQuote}`;
-        else if (fromInvoice) endpoint = `${API_URL}/billing/invoice/${fromInvoice}`;
-        else if (fromNota) endpoint = `${API_URL}/notas-entrega/${fromNota}`;
-        if (!endpoint) return;
-
-        try {
-            const res = await fetch(endpoint);
-            const data = await res.json();
-            if (data.success) {
-                const doc = data.data;
-                currentItems = doc.items.map(item => ({
-                    catalogo_id: item.catalogo_id,
-                    nombre: item.item_nombre,
-                    precio_usd: item.precio_unitario_usd,
-                    cantidad: item.cantidad
-                }));
-                const nro = doc.nro_cotizacion || doc.nro_factura || doc.nro_nota_entrega || '';
-                searchQuote.value = `Ítems de ${nro}`;
-                renderTable();
-                alert(`${doc.items.length} ítem(s) cargados de ${nro}.\nSelecciona el cliente para continuar.`);
-            }
-        } catch (e) { console.error(e); }
+        const preload = sessionStorage.getItem('preload_items');
+        if (!preload) return;
+        const items = JSON.parse(preload);
+        const nro = sessionStorage.getItem('preload_from') || '';
+        sessionStorage.removeItem('preload_items');
+        sessionStorage.removeItem('preload_from');
+        currentItems = items;
+        searchQuote.value = `Ítems de ${nro}`;
+        renderTable();
+        alert(`${items.length} ítem(s) cargados de ${nro}.\nSelecciona el cliente para continuar.`);
     }
 
     // ======== AUTOCOMPLETADO DE CLIENTES ========
@@ -325,6 +307,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    window.updatePriceUsd = (id, elm) => {
+        const item = currentItems.find(i => i.catalogo_id === id);
+        if(!item) return;
+        let val = parseFloat(elm.value);
+        if(isNaN(val) || val < 0) val = 0;
+        item.precio_usd = val;
+        renderTable();
+    };
+
+    window.updatePriceVes = (id, elm) => {
+        const item = currentItems.find(i => i.catalogo_id === id);
+        if(!item) return;
+        let valVes = parseFloat(elm.value);
+        if(isNaN(valVes) || valVes < 0) valVes = 0;
+        item.precio_usd = rate > 0 ? +(valVes / rate).toFixed(4) : 0;
+        renderTable();
+    };
+
     window.deleteItem = (id) => {
         currentItems = currentItems.filter(i => i.catalogo_id !== id);
         renderTable();
@@ -350,8 +350,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             tr.innerHTML = `
                 <td><strong>${item.nombre}</strong></td>
                 <td>
-                    $${formatVez(item.precio_usd)} <br>
-                    <small style="color:var(--color-secondary); font-size: 0.8rem;">Bs. ${formatVez(priceVes)}</small>
+                    <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                        <span style="font-size:0.75rem;color:#6b7280;font-weight:600;">$</span>
+                        <input type="number" step="0.01" min="0" value="${item.precio_usd.toFixed(2)}"
+                               onchange="updatePriceUsd(${item.catalogo_id}, this)"
+                               style="width:80px;padding:4px 6px;border:1px solid #d1d5db;border-radius:5px;font-weight:600;color:var(--color-secondary);">
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <span style="font-size:0.75rem;color:#1d4ed8;font-weight:600;">Bs.</span>
+                        <input type="number" step="0.01" min="0" value="${priceVes.toFixed(2)}"
+                               onchange="updatePriceVes(${item.catalogo_id}, this)"
+                               style="width:100px;padding:4px 6px;border:1px solid #bfdbfe;border-radius:5px;font-weight:500;color:#1d4ed8;font-size:0.85rem;">
+                    </div>
                 </td>
                 <td><input type="number" class="qty" value="${item.cantidad}" onchange="updateQty(${item.catalogo_id}, this)"></td>
                 <td style="font-weight:600;">
