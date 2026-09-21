@@ -229,8 +229,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         let subUsd = 0;
 
         currentItems.forEach(item => {
-            const lineUsd = item.precio_usd * item.cantidad;
-            const priceVes = item.precio_usd * rate;
+            const pUsd = parseFloat(item.precio_usd) || 0;
+            const lineUsd = pUsd * item.cantidad;
+            const priceVes = pUsd * rate;
             const lineVes = lineUsd * rate;
             subUsd += lineUsd;
 
@@ -240,7 +241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td>
                     <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
                         <span style="font-size:0.75rem;color:#6b7280;font-weight:600;">$</span>
-                        <input type="number" step="0.01" min="0" value="${item.precio_usd.toFixed(2)}"
+                        <input type="number" step="0.01" min="0" value="${pUsd.toFixed(2)}"
                                onchange="updatePriceUsd(${item.catalogo_id}, this)"
                                style="width:80px;padding:4px 6px;border:1px solid #d1d5db;border-radius:5px;font-weight:600;color:var(--color-secondary);">
                     </div>

@@ -437,8 +437,8 @@
             _pendingItems = doc.items.map(item => ({
                 catalogo_id: item.catalogo_id,
                 nombre: item.item_nombre,
-                precio_usd: item.precio_unitario_usd,
-                cantidad: item.cantidad
+                precio_usd: parseFloat(item.precio_unitario_usd) || 0,
+                cantidad: parseInt(item.cantidad) || 1
             }));
             _pendingNro = doc[nroField] || '';
             document.getElementById('modalDestino').style.display = 'flex';
