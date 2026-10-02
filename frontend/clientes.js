@@ -32,8 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td><span class="badge ${ent.tipo}">${ent.tipo.toUpperCase()}</span></td>
                         <td><strong>${ent.nombre_razon}</strong></td>
                         <td>${ent.rif}</td>
+                        <td>${ent.sector || '-'}</td>
                         <td>
-                            ${ent.telefono || '-'}<br>
+                            ${ent.whatsapp ? `<i class="ph ph-whatsapp-logo" style="color:#25d366"></i> ${ent.whatsapp}<br>` : ''}
+                            ${ent.telefono || (ent.whatsapp ? '' : '-')}<br>
                             <small style="color:gray">${ent.email || ''}</small>
                         </td>
                         <td>
@@ -45,10 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             } else {
                 localEntities = [];
-                entitiesBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No se encontraron registros.</td></tr>';
+                entitiesBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No se encontraron registros.</td></tr>';
             }
         } catch (error) {
-            entitiesBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Error de conexión con el servidor.</td></tr>';
+            entitiesBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Error de conexión con el servidor.</td></tr>';
         }
     }
 
@@ -61,6 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('tipo').value = ent.tipo;
         document.getElementById('nombre_razon').value = ent.nombre_razon;
         document.getElementById('rif').value = ent.rif;
+        document.getElementById('sector').value = ent.sector || '';
+        document.getElementById('whatsapp').value = ent.whatsapp || '';
         document.getElementById('telefono').value = ent.telefono || '';
         document.getElementById('email').value = ent.email || '';
         document.getElementById('direccion').value = ent.direccion || '';
@@ -77,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tipo: document.getElementById('tipo').value,
             nombre_razon: document.getElementById('nombre_razon').value,
             rif: document.getElementById('rif').value,
+            sector: document.getElementById('sector').value,
+            whatsapp: document.getElementById('whatsapp').value,
             telefono: document.getElementById('telefono').value,
             email: document.getElementById('email').value,
             direccion: document.getElementById('direccion').value

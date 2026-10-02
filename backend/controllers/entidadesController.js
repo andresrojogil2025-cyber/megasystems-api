@@ -29,15 +29,18 @@ const entidadesController = {
     // Crear Entidad
     create: async (req, res) => {
         try {
-            const { tipo, nombre_razon, rif, direccion, telefono, email } = req.body;
-            
+            const { tipo, nombre_razon, rif, direccion, telefono, email, sector, whatsapp } = req.body;
+
             if (!tipo || !nombre_razon || !rif) {
                 return res.status(400).json({ error: 'Tipo, Razón Social y RIF son obligatorios' });
             }
+            if (tipo === 'cliente' && !whatsapp) {
+                return res.status(400).json({ error: 'El WhatsApp es obligatorio para los clientes' });
+            }
 
             const info = await db.runAsync(
-                'INSERT INTO entidades (tipo, nombre_razon, rif, direccion, telefono, email) VALUES (?, ?, ?, ?, ?, ?)',
-                [tipo, nombre_razon.toUpperCase(), rif.toUpperCase(), direccion, telefono, email]
+                'INSERT INTO entidades (tipo, nombre_razon, rif, direccion, telefono, email, sector, whatsapp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [tipo, nombre_razon.toUpperCase(), rif.toUpperCase(), direccion, telefono, email, sector || null, whatsapp || null]
             );
 
             res.json({ success: true, message: 'Entidad registrada con éxito', id: info.lastID });
@@ -54,15 +57,18 @@ const entidadesController = {
     update: async (req, res) => {
         try {
             const { id } = req.params;
-            const { tipo, nombre_razon, rif, direccion, telefono, email } = req.body;
-            
+            const { tipo, nombre_razon, rif, direccion, telefono, email, sector, whatsapp } = req.body;
+
             if (!tipo || !nombre_razon || !rif) {
                 return res.status(400).json({ error: 'Tipo, Razón Social y RIF son obligatorios' });
             }
+            if (tipo === 'cliente' && !whatsapp) {
+                return res.status(400).json({ error: 'El WhatsApp es obligatorio para los clientes' });
+            }
 
             await db.runAsync(
-                'UPDATE entidades SET tipo = ?, nombre_razon = ?, rif = ?, direccion = ?, telefono = ?, email = ? WHERE id = ?',
-                [tipo, nombre_razon.toUpperCase(), rif.toUpperCase(), direccion, telefono, email, id]
+                'UPDATE entidades SET tipo = ?, nombre_razon = ?, rif = ?, direccion = ?, telefono = ?, email = ?, sector = ?, whatsapp = ? WHERE id = ?',
+                [tipo, nombre_razon.toUpperCase(), rif.toUpperCase(), direccion, telefono, email, sector || null, whatsapp || null, id]
             );
 
             res.json({ success: true, message: 'Entidad actualizada con éxito' });
