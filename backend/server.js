@@ -149,6 +149,7 @@ app.get('/api/seniat/sales-book', seniatController.generateSalesBook);
 // Rutas Integración WhatsApp
 app.get('/api/whatsapp/status', whatsappController.getStatus);
 app.post('/api/whatsapp/send-reminders', whatsappController.sendReminders);
+app.post('/api/whatsapp/send-test', whatsappController.sendTest);
 
 // Ruta de salud
 app.get('/api/health', (req, res) => {

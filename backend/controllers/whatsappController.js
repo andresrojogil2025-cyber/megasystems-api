@@ -259,8 +259,35 @@ const enviarCobranzaAutomatica = async (grupo, tipo) => {
     }
 };
 
+/**
+ * 4. Enviar mensaje de prueba a un número específico
+ */
+const sendTest = async (req, res) => {
+    if (!isConnected || !wpClient) {
+        return res.status(400).json({ success: false, error: 'WhatsApp no conectado. Escanea el QR primero.' });
+    }
+
+    const { numero, mensaje } = req.body;
+    if (!numero || !mensaje) {
+        return res.status(400).json({ success: false, error: 'Faltan número y mensaje.' });
+    }
+
+    const numFormateado = formatPhoneNumber(numero);
+    if (!numFormateado) {
+        return res.status(400).json({ success: false, error: 'Formato de número inválido. Usa 04XX-XXXXXXX.' });
+    }
+
+    try {
+        await wpClient.sendMessage(numFormateado, mensaje);
+        res.json({ success: true, message: `Mensaje enviado a ${numFormateado}` });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
 module.exports = {
     getStatus,
     sendReminders,
+    sendTest,
     enviarCobranzaAutomatica
 };

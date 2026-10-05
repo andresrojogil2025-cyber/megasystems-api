@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Megasystems - WhatsApp</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .page-header h2 { color: var(--color-text-main); }
+        .btn-back { display: flex; align-items: center; gap: 8px; color: var(--color-primary); text-decoration: none; font-weight: 500; }
+
+        .layout-grid { display: grid; grid-template-columns: 340px 1fr; gap: 25px; align-items: start; }
+        .panel { background: var(--color-surface); padding: 25px; border-radius: var(--border-radius-lg); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .panel h3 { margin-bottom: 20px; color: var(--color-text-main); border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; }
+
+        .status-box { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 10px; margin-bottom: 20px; }
+        .status-box.connecting { background: #fef3c7; }
+        .status-box.qr_ready   { background: #dbeafe; }
+        .status-box.connected  { background: #dcfce7; }
+        .status-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+        .status-dot.connecting { background: #f59e0b; animation: pulse 1.2s infinite; }
+        .status-dot.qr_ready   { background: #3b82f6; animation: pulse 1.2s infinite; }
+        .status-dot.connected  { background: #16a34a; }
+        .status-text { font-weight: 600; font-size: 0.95rem; }
+        .status-sub  { font-size: 0.8rem; color: var(--color-text-muted); margin-top: 2px; }
+
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+        #qrContainer { text-align: center; margin: 16px 0; }
+        #qrContainer img { width: 220px; height: 220px; border-radius: 10px; border: 1px solid #e5e7eb; }
+        #qrContainer p  { font-size: 0.82rem; color: var(--color-text-muted); margin-top: 8px; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: var(--color-text-main); font-weight: 500; font-size: 0.9rem; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 10px; border: 1px solid #d1d5db;
+            border-radius: var(--border-radius-sm); font-family: 'Inter'; outline: none;
+        }
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--color-primary); }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+
+        .btn-green { background: #16a34a; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
+        .btn-green:hover { background: #15803d; }
+        .btn-green:disabled { background: #9ca3af; cursor: not-allowed; }
+
+        .result-box { margin-top: 16px; padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; display: none; }
+        .result-box.ok  { background: #dcfce7; color: #15803d; }
+        .result-box.err { background: #fee2e2; color: #b91c1c; }
+
+        @media (max-width: 768px) { .layout-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body style="background: var(--color-bg-light); padding: 30px;">
+
+    <div class="page-header">
+        <a href="dashboard.html" class="btn-back"><i class="ph ph-arrow-left"></i> Volver al Dashboard</a>
+        <h2><i class="ph ph-whatsapp-logo" style="color:#25d366"></i> WhatsApp Cobranza</h2>
+    </div>
+
+    <div class="layout-grid">
+
+        <!-- Panel conexión -->
+        <div class="panel">
+            <h3>Estado de Conexión</h3>
+
+            <div id="statusBox" class="status-box connecting">
+                <div id="statusDot" class="status-dot connecting"></div>
+                <div>
+                    <div id="statusText" class="status-text">Conectando...</div>
+                    <div id="statusSub" class="status-sub">Iniciando Puppeteer en el servidor</div>
+                </div>
+            </div>
+
+            <div id="qrContainer" style="display:none;">
+                <img id="qrImg" src="" alt="Código QR de WhatsApp">
+                <p>Abre WhatsApp en tu teléfono → Dispositivos vinculados → Vincular dispositivo → Escanea este código</p>
+            </div>
+
+            <div id="connectedMsg" style="display:none; text-align:center; padding: 20px 0; color: #16a34a;">
+                <i class="ph ph-check-circle" style="font-size:3rem;"></i>
+                <p style="font-weight:600; margin-top:8px;">WhatsApp conectado y listo</p>
+            </div>
+        </div>
+
+        <!-- Panel prueba / envío -->
+        <div class="panel">
+            <h3>Enviar Mensaje de Prueba</h3>
+
+            <div class="form-group">
+                <label>Número de WhatsApp</label>
+                <input type="text" id="testNumero" placeholder="Ej. 0414-1234567" />
+            </div>
+            <div class="form-group">
+                <label>Mensaje</label>
+                <textarea id="testMensaje">Hola, este es un mensaje de prueba de Megasystems ✅</textarea>
+            </div>
+            <button class="btn-green" id="btnEnviarPrueba" disabled>
+                <i class="ph ph-paper-plane-tilt"></i> Enviar Prueba
+            </button>
+            <div id="testResult" class="result-box"></div>
+
+            <hr style="margin: 25px 0; border-color: #e5e7eb;">
+
+            <h3 style="border:none; padding:0; margin-bottom:16px;">Enviar Recordatorios Masivos</h3>
+            <p style="font-size:0.88rem; color:var(--color-text-muted); margin-bottom:16px;">
+                Envía el mensaje de cobranza a todos los clientes activos que no han pagado este mes.
+            </p>
+            <button class="btn-green" id="btnEnviarMasivo" disabled>
+                <i class="ph ph-broadcast"></i> Enviar a Todos los Deudores
+            </button>
+            <div id="masivoResult" class="result-box"></div>
+        </div>
+    </div>
+
+    <script>
+        const API = '/api';
+        let pollingInterval = null;
+
+        function setStatus(status, qrBase64) {
+            const box  = document.getElementById('statusBox');
+            const dot  = document.getElementById('statusDot');
+            const txt  = document.getElementById('statusText');
+            const sub  = document.getElementById('statusSub');
+            const qrC  = document.getElementById('qrContainer');
+            const ok   = document.getElementById('connectedMsg');
+            const btnP = document.getElementById('btnEnviarPrueba');
+            const btnM = document.getElementById('btnEnviarMasivo');
+
+            box.className = `status-box ${status.toLowerCase()}`;
+            dot.className = `status-dot ${status.toLowerCase()}`;
+            qrC.style.display = 'none';
+            ok.style.display  = 'none';
+
+            if (status === 'CONNECTED') {
+                txt.textContent = 'Conectado';
+                sub.textContent = 'WhatsApp activo y listo para enviar';
+                ok.style.display = 'block';
+                btnP.disabled = false;
+                btnM.disabled = false;
+                clearInterval(pollingInterval);
+            } else if (status === 'QR_READY') {
+                txt.textContent = 'Esperando escaneo';
+                sub.textContent = 'Escanea el código QR con tu teléfono';
+                document.getElementById('qrImg').src = qrBase64;
+                qrC.style.display = 'block';
+                btnP.disabled = true;
+                btnM.disabled = true;
+            } else {
+                txt.textContent = 'Conectando...';
+                sub.textContent = 'Iniciando Puppeteer en el servidor';
+                btnP.disabled = true;
+                btnM.disabled = true;
+            }
+        }
+
+        async function pollStatus() {
+            try {
+                const res  = await fetch(`${API}/whatsapp/status`);
+                const data = await res.json();
+                setStatus(data.status, data.qrBase64);
+            } catch (e) {
+                document.getElementById('statusSub').textContent = 'Error de conexión con el servidor';
+            }
+        }
+
+        pollStatus();
+        pollingInterval = setInterval(pollStatus, 4000);
+
+        document.getElementById('btnEnviarPrueba').addEventListener('click', async () => {
+            const numero  = document.getElementById('testNumero').value.trim();
+            const mensaje = document.getElementById('testMensaje').value.trim();
+            const result  = document.getElementById('testResult');
+
+            if (!numero || !mensaje) {
+                result.className = 'result-box err';
+                result.style.display = 'block';
+                result.textContent = 'Ingresa número y mensaje.';
+                return;
+            }
+
+            result.style.display = 'none';
+            const btn = document.getElementById('btnEnviarPrueba');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ph ph-spinner"></i> Enviando...';
+
+            try {
+                const res  = await fetch(`${API}/whatsapp/send-test`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ numero, mensaje })
+                });
+                const data = await res.json();
+                result.className = `result-box ${data.success ? 'ok' : 'err'}`;
+                result.style.display = 'block';
+                result.textContent = data.message || data.error;
+            } catch (e) {
+                result.className = 'result-box err';
+                result.style.display = 'block';
+                result.textContent = 'Error de conexión con el servidor.';
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Enviar Prueba';
+        });
+
+        document.getElementById('btnEnviarMasivo').addEventListener('click', async () => {
+            if (!confirm('¿Enviar mensaje de recordatorio a todos los clientes con pago pendiente este mes?')) return;
+
+            const result = document.getElementById('masivoResult');
+            result.style.display = 'none';
+            const btn = document.getElementById('btnEnviarMasivo');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ph ph-spinner"></i> Procesando...';
+
+            try {
+                const res  = await fetch(`${API}/whatsapp/send-reminders`, { method: 'POST' });
+                const data = await res.json();
+                result.className = `result-box ${data.success ? 'ok' : 'err'}`;
+                result.style.display = 'block';
+                result.textContent = data.message || data.error;
+            } catch (e) {
+                result.className = 'result-box err';
+                result.style.display = 'block';
+                result.textContent = 'Error de conexión con el servidor.';
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ph ph-broadcast"></i> Enviar a Todos los Deudores';
+        });
+    </script>
+</body>
+</html>
