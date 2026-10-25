@@ -1,6 +1,33 @@
 const API_URL = '/api';
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
+let bcvRate = 0;
+
+async function loadBcvRate() {
+    try {
+        const res = await fetch(`${API_URL}/bcv/rate`);
+        const data = await res.json();
+        if (data.rate) {
+            bcvRate = parseFloat(data.rate);
+            const el = document.getElementById('tasaLabelNuevo');
+            if (el) el.textContent = `(Tasa BCV: Bs. ${bcvRate.toFixed(2)} = $1)`;
+        }
+    } catch(e) {}
+}
+
+window.calcCostoBsNuevo = () => {
+    if (bcvRate <= 0) return;
+    const bs = parseFloat(document.getElementById('costo_bs').value) || 0;
+    if (bs > 0) {
+        const usd = +(bs / bcvRate).toFixed(2);
+        document.getElementById('costo_usd').value = usd;
+        calcPrecioNuevo();
+    } else {
+        document.getElementById('costo_usd').value = '';
+        document.getElementById('precioResumen').style.display = 'none';
+    }
+};
+
 // ── Cálculo costo / margen / precio ──────────────────────────────────────────
 // Formulario nuevo
 window.calcPrecioNuevo = () => {
@@ -63,6 +90,8 @@ function mostrarResumenEdit(costo, margen, precio) {
 document.addEventListener('DOMContentLoaded', () => {
 
     if (!localStorage.getItem('token')) { window.location.href = 'index.html'; return; }
+
+    loadBcvRate();
 
     const catalogForm = document.getElementById('catalogForm');
     const catalogBody = document.getElementById('catalogBody');
@@ -133,6 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.ok && data.success) {
                 catalogForm.reset();
                 document.getElementById('tipo').value = 'producto';
+                document.getElementById('costo_bs').value = '';
                 document.getElementById('precioResumen').style.display = 'none';
                 if (window.toggleStockField) window.toggleStockField();
                 loadCatalog();
