@@ -4,37 +4,40 @@ const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, 
 let bcvRate = 0;
 
 async function loadBcvRate() {
+    const el = document.getElementById('tasaLabelNuevo');
+    if (el && bcvRate <= 0) { el.textContent = '(cargando tasa...)'; el.style.color = '#64748b'; }
     try {
         const res = await fetch(`${API_URL}/bcv/rate`);
         const data = await res.json();
-        if (data.rate) {
-            bcvRate = parseFloat(data.rate);
-            const el = document.getElementById('tasaLabelNuevo');
-            if (el) el.textContent = `(Tasa BCV: Bs. ${bcvRate.toFixed(2)} = $1)`;
+        const rate = parseFloat(data.rate || data.tasa || 0);
+        if (rate > 0) {
+            bcvRate = rate;
+            if (el) { el.textContent = `(Tasa BCV: Bs. ${bcvRate.toFixed(2)} = $1)`; el.style.color = '#64748b'; }
+        } else {
+            if (el) { el.textContent = `(Sin tasa disponible)`; el.style.color = '#ef4444'; }
         }
-    } catch(e) {}
+    } catch(e) {
+        if (el) { el.textContent = `(Error: ${e.message})`; el.style.color = '#ef4444'; }
+    }
 }
 
-window.calcCostoBsNuevo = () => {
+window.calcCostoBsNuevo = async () => {
     const bs = parseFloat(document.getElementById('costo_bs').value) || 0;
     if (bs <= 0) {
         document.getElementById('costo_usd').value = '';
         document.getElementById('precioResumen').style.display = 'none';
         return;
     }
-    if (bcvRate <= 0) {
-        loadBcvRate().then(() => {
-            if (bcvRate > 0) {
-                const usd = +(bs / bcvRate).toFixed(2);
-                document.getElementById('costo_usd').value = usd;
-                calcPrecioNuevo();
-            }
-        });
-        return;
+    if (bcvRate <= 0) await loadBcvRate();
+    if (bcvRate > 0) {
+        const usd = +(bs / bcvRate).toFixed(2);
+        document.getElementById('costo_usd').value = usd;
+        calcPrecioNuevo();
+    } else {
+        const el = document.getElementById('tasaLabelNuevo');
+        if (el) el.textContent = '(Error cargando tasa — intenta de nuevo)';
+        el.style.color = '#ef4444';
     }
-    const usd = +(bs / bcvRate).toFixed(2);
-    document.getElementById('costo_usd').value = usd;
-    calcPrecioNuevo();
 };
 
 // ── Cálculo costo / margen / precio ──────────────────────────────────────────
