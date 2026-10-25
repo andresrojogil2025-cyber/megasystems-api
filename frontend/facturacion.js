@@ -319,6 +319,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const item = currentItems.find(i => i.catalogo_id === id);
         if(!item) return;
         item.precio_usd = parseVez(elm.value);
+        delete item._vesOverride;
         renderTable();
     };
 
@@ -326,7 +327,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const item = currentItems.find(i => i.catalogo_id === id);
         if(!item) return;
         const valVes = parseVez(elm.value);
-        item.precio_usd = rate > 0 ? +(valVes / rate).toFixed(4) : 0;
+        item._vesOverride = valVes;
+        item.precio_usd = rate > 0 ? parseFloat((valVes / rate).toFixed(8)) : 0;
         renderTable();
     };
 
@@ -349,8 +351,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentItems.forEach(item => {
             const pUsd = parseFloat(item.precio_usd) || 0;
             const lineUsd = pUsd * item.cantidad;
-            const priceVes = pUsd * rate;
-            const lineVes = +(lineUsd * rate).toFixed(2);
+            const priceVes = item._vesOverride !== undefined ? item._vesOverride : pUsd * rate;
+            const lineVes = +(priceVes * item.cantidad).toFixed(2);
             subUsd += lineUsd;
             subVes += lineVes;
 
