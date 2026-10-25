@@ -16,16 +16,25 @@ async function loadBcvRate() {
 }
 
 window.calcCostoBsNuevo = () => {
-    if (bcvRate <= 0) return;
     const bs = parseFloat(document.getElementById('costo_bs').value) || 0;
-    if (bs > 0) {
-        const usd = +(bs / bcvRate).toFixed(2);
-        document.getElementById('costo_usd').value = usd;
-        calcPrecioNuevo();
-    } else {
+    if (bs <= 0) {
         document.getElementById('costo_usd').value = '';
         document.getElementById('precioResumen').style.display = 'none';
+        return;
     }
+    if (bcvRate <= 0) {
+        loadBcvRate().then(() => {
+            if (bcvRate > 0) {
+                const usd = +(bs / bcvRate).toFixed(2);
+                document.getElementById('costo_usd').value = usd;
+                calcPrecioNuevo();
+            }
+        });
+        return;
+    }
+    const usd = +(bs / bcvRate).toFixed(2);
+    document.getElementById('costo_usd').value = usd;
+    calcPrecioNuevo();
 };
 
 // ── Cálculo costo / margen / precio ──────────────────────────────────────────
@@ -55,6 +64,11 @@ function mostrarResumenNuevo(costo, margen, precio) {
     document.getElementById('rCosto').textContent = '$' + fmt(costo);
     document.getElementById('rMargen').textContent = fmt(margen);
     document.getElementById('rPrecio').textContent = '$' + fmt(precio);
+    const bsWrap = document.getElementById('rPrecioBsWrap');
+    if (bcvRate > 0 && bsWrap) {
+        document.getElementById('rPrecioBs').textContent = 'Bs. ' + fmt(precio * bcvRate);
+        bsWrap.style.display = 'inline';
+    }
     r.style.display = (costo > 0 || precio > 0) ? 'block' : 'none';
 }
 
