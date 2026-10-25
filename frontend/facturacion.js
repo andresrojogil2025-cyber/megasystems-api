@@ -344,13 +344,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         tbody.innerHTML = '';
         let subUsd = 0;
+        let subVes = 0;
 
         currentItems.forEach(item => {
             const pUsd = parseFloat(item.precio_usd) || 0;
             const lineUsd = pUsd * item.cantidad;
             const priceVes = pUsd * rate;
-            const lineVes = lineUsd * rate;
+            const lineVes = +(lineUsd * rate).toFixed(2);
             subUsd += lineUsd;
+            subVes += lineVes;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -381,10 +383,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             tbody.appendChild(tr);
         });
 
-        calculateTotals(subUsd);
+        calculateTotals(subUsd, subVes);
     }
 
-    function calculateTotals(subtotalUsd) {
+    function calculateTotals(subtotalUsd, subtotalVes) {
         const ivaUsd = subtotalUsd * 0.16;
         const totalUsd = subtotalUsd + ivaUsd;
 
@@ -393,9 +395,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('totGrandUsd').innerText = formatVez(totalUsd);
 
         if(rate > 0) {
-            document.getElementById('totSubVes').innerText = formatVez(subtotalUsd * rate);
-            document.getElementById('totIvaVes').innerText = formatVez(ivaUsd * rate);
-            document.getElementById('totGrandVes').innerText = formatVez(totalUsd * rate);
+            const sVes = subtotalVes || +(subtotalUsd * rate).toFixed(2);
+            const ivaVes = +(sVes * 0.16).toFixed(2);
+            const totalVes = +(sVes + ivaVes).toFixed(2);
+            document.getElementById('totSubVes').innerText = formatVez(sVes);
+            document.getElementById('totIvaVes').innerText = formatVez(ivaVes);
+            document.getElementById('totGrandVes').innerText = formatVez(totalVes);
         } else {
             document.getElementById('totSubVes').innerText = "0,00";
             document.getElementById('totIvaVes').innerText = "0,00";
