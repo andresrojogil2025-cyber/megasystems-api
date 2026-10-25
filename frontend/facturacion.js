@@ -351,7 +351,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentItems.forEach(item => {
             const pUsd = parseFloat(item.precio_usd) || 0;
             const lineUsd = pUsd * item.cantidad;
-            const priceVes = item._vesOverride !== undefined ? item._vesOverride : pUsd * rate;
+            const priceVes = item._vesOverride !== undefined ? item._vesOverride : Math.round(pUsd * rate * 100) / 100;
             const lineVes = +(priceVes * item.cantidad).toFixed(2);
             subUsd += lineUsd;
             subVes += lineVes;
