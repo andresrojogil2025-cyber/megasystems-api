@@ -166,6 +166,13 @@
                 <label>Descripción</label>
                 <textarea id="editDescripcion" rows="2"></textarea>
             </div>
+            <div class="form-group">
+                <label>Costo en Bs. <span id="tasaLabelEdit" style="font-weight:400;color:#64748b;font-size:0.8rem;"></span></label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="number" step="0.01" id="editCostoBs" placeholder="Bs. 0,00" oninput="calcCostoBsEdit()" style="flex:1;">
+                    <span style="color:#9ca3af;font-size:0.85rem;white-space:nowrap;">→ USD ↓</span>
+                </div>
+            </div>
             <div style="display:flex; gap:10px;">
                 <div class="form-group" style="flex:1;">
                     <label>Costo (USD) $</label>

@@ -76,6 +76,20 @@ function mostrarResumenNuevo(costo, margen, precio) {
 }
 
 // Modal edición
+window.calcCostoBsEdit = async () => {
+    const bs = parseFloat(document.getElementById('editCostoBs').value) || 0;
+    if (bs <= 0) {
+        document.getElementById('editCosto').value = '';
+        document.getElementById('editPrecioResumen').style.display = 'none';
+        return;
+    }
+    if (bcvRate <= 0) await loadBcvRate();
+    if (bcvRate > 0) {
+        document.getElementById('editCosto').value = +(bs / bcvRate).toFixed(2);
+        calcPrecioEdit();
+    }
+};
+
 window.calcPrecioEdit = () => {
     const costo = parseFloat(document.getElementById('editCosto').value) || 0;
     const margen = parseFloat(document.getElementById('editMargen').value) || 0;
@@ -196,6 +210,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.editItem = (id) => {
         const item = catalogCache.find(i => i.id === id);
         if (!item) return;
+        document.getElementById('editCostoBs').value = '';
+        const tasaEl = document.getElementById('tasaLabelEdit');
+        if (tasaEl) tasaEl.textContent = bcvRate > 0 ? `(Tasa BCV: Bs. ${bcvRate.toFixed(2)} = $1)` : '';
         document.getElementById('editId').value = item.id;
         document.getElementById('editTipo').value = item.tipo;
         document.getElementById('editNombre').value = item.nombre;
