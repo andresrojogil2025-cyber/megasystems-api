@@ -102,6 +102,7 @@
 
         <div class="action-buttons no-print">
             <a href="recibos.html" class="btn-back">⬅️ Volver a Recibos</a>
+            <button class="btn-back" onclick="openEditModal()" style="margin-right:10px; cursor:pointer;">✏️ Editar</button>
             <input type="file" id="inputFirma" accept="image/*" style="display:none" onchange="uploadFirma(this.files[0])">
             <button class="btn-back" onclick="document.getElementById('inputFirma').click()" style="margin-right:10px; cursor:pointer;">Configurar Firma</button>
             <button class="btn" onclick="window.print()">🖨️ Imprimir / PDF</button>
@@ -186,9 +187,64 @@
 
     </div>
 
+    <!-- Modal Editar Recibo -->
+    <div id="modalEditar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:200; justify-content:center; align-items:center;" class="no-print">
+        <div style="background:white; padding:25px; border-radius:10px; width:480px; max-width:95%; box-shadow:0 10px 25px rgba(0,0,0,0.2); max-height:90vh; overflow-y:auto;">
+            <h3 style="margin:0 0 15px; color:#0f172a; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">✏️ Editar Recibo <span id="editNroLabel" style="color:#2563eb;"></span></h3>
+            <input type="hidden" id="editId">
+
+            <div style="margin-bottom:14px;">
+                <label style="display:block; font-weight:600; font-size:0.9rem; margin-bottom:5px;">Fecha</label>
+                <input type="date" id="editFecha" style="width:100%; padding:9px; border:1px solid #cbd5e1; border-radius:5px; outline:none; box-sizing:border-box; font-family:inherit;">
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block; font-weight:600; font-size:0.9rem; margin-bottom:5px;">Monto</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="number" id="editMonto" min="0" step="0.01" style="flex:1; padding:9px; border:1px solid #cbd5e1; border-radius:5px; outline:none;">
+                    <select id="editMoneda" style="width:110px; padding:9px; border:1px solid #cbd5e1; border-radius:5px; outline:none; font-family:inherit;">
+                        <option value="USD">USD</option>
+                        <option value="VES">VES (Bs.)</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block; font-weight:600; font-size:0.9rem; margin-bottom:5px;">Método de Pago</label>
+                <select id="editMetodo" style="width:100%; padding:9px; border:1px solid #cbd5e1; border-radius:5px; outline:none; font-family:inherit;">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="transferencia">Transferencia Bancaria</option>
+                    <option value="pago_movil">Pago Móvil</option>
+                    <option value="zelle">Zelle</option>
+                    <option value="binance">Binance / Cripto</option>
+                    <option value="otro">Otro</option>
+                </select>
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block; font-weight:600; font-size:0.9rem; margin-bottom:5px;">Concepto</label>
+                <input type="text" id="editConcepto" style="width:100%; padding:9px; border:1px solid #cbd5e1; border-radius:5px; outline:none; box-sizing:border-box;">
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block; font-weight:600; font-size:0.9rem; margin-bottom:5px;">Observaciones</label>
+                <textarea id="editObservaciones" style="width:100%; padding:9px; border:1px solid #cbd5e1; border-radius:5px; outline:none; font-family:inherit; resize:vertical; min-height:65px; box-sizing:border-box;"></textarea>
+            </div>
+            <div style="margin-bottom:20px;">
+                <label style="display:block; font-weight:600; font-size:0.9rem; margin-bottom:5px;">Mostrar en el recibo</label>
+                <select id="editModoMoneda" style="width:100%; padding:9px; border:1px solid #cbd5e1; border-radius:5px; outline:none; font-family:inherit;">
+                    <option value="ambas">Ambas monedas (USD + Bs.)</option>
+                    <option value="usd">Solo Dólares (USD)</option>
+                    <option value="ves">Solo Bolívares (Bs.)</option>
+                </select>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="document.getElementById('modalEditar').style.display='none'" style="padding:10px 18px; border:1px solid #cbd5e1; background:white; border-radius:5px; cursor:pointer; font-family:inherit;">Cancelar</button>
+                <button onclick="saveEdit()" style="padding:10px 18px; border:none; background:#1e3a8a; color:white; border-radius:5px; font-weight:600; cursor:pointer; font-family:inherit;">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_URL = '/api';
         const formatVez = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+        let currentRecibo = null;
 
         async function loadRecibo() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -210,6 +266,7 @@
 
                 if (data.success) {
                     const r = data.data;
+                    currentRecibo = r;
                     const c = r.cliente;
 
                     document.getElementById('lblNro').innerText = r.nro_recibo;
@@ -329,6 +386,50 @@
                 } catch(e) { alert('Error al subir la firma'); }
             };
             reader.readAsDataURL(file);
+        }
+
+        function openEditModal() {
+            if (!currentRecibo) return;
+            const r = currentRecibo;
+            document.getElementById('editId').value = r.id;
+            document.getElementById('editNroLabel').innerText = r.nro_recibo;
+            document.getElementById('editFecha').value = (r.fecha || '').split('T')[0];
+            document.getElementById('editMonto').value = parseFloat(r.monto_usd || 0).toFixed(2);
+            document.getElementById('editMoneda').value = 'USD';
+            document.getElementById('editMetodo').value = r.metodo_pago || 'efectivo';
+            document.getElementById('editConcepto').value = r.concepto || '';
+            document.getElementById('editObservaciones').value = r.observaciones || '';
+            document.getElementById('editModoMoneda').value = r.modo_moneda || 'ambas';
+            document.getElementById('modalEditar').style.display = 'flex';
+        }
+
+        async function saveEdit() {
+            const id = document.getElementById('editId').value;
+            const payload = {
+                monto: parseFloat(document.getElementById('editMonto').value) || 0,
+                moneda: document.getElementById('editMoneda').value,
+                metodo_pago: document.getElementById('editMetodo').value,
+                concepto: document.getElementById('editConcepto').value,
+                observaciones: document.getElementById('editObservaciones').value,
+                modo_moneda: document.getElementById('editModoMoneda').value,
+                fecha_documento: document.getElementById('editFecha').value
+            };
+            try {
+                const res = await fetch(`${API_URL}/recibos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('modalEditar').style.display = 'none';
+                    location.reload();
+                } else {
+                    alert(data.error || 'Error actualizando el recibo');
+                }
+            } catch(e) {
+                alert('Error de conexión');
+            }
         }
 
         window.onload = loadRecibo;
