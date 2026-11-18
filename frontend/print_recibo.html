@@ -40,6 +40,7 @@
             border-radius: 8px;
             box-sizing: border-box;
             position: relative;
+            min-height: 500px;
         }
 
         .header {
@@ -167,14 +168,21 @@
 
         <p style="font-size: 0.8rem; color: var(--text-light); text-align:center;" id="lblObservaciones"></p>
 
-        <!-- FIRMA -->
+        <!-- FIRMA (arrastrable) -->
+        <img id="imgFirma" src="" alt="" draggable="false"
+             style="position:absolute; cursor:move; display:none; max-height:70px; max-width:220px; object-fit:contain; z-index:10; user-select:none; -webkit-user-select:none;"
+             title="Arrastra para mover">
+
         <div class="signatures-section">
             <div class="signature-box">
-                <img id="imgFirma" src="" alt="Firma" style="max-height:60px; max-width:200px; display:none; margin-bottom:5px; object-fit:contain;">
                 <div class="signature-line"></div>
                 <div class="signature-label">Recibido por</div>
             </div>
         </div>
+
+        <p class="no-print" id="firmaHint" style="display:none; text-align:center; font-size:0.78rem; color:#94a3b8; margin-top:8px;">
+            Arrastra la firma para posicionarla sobre la línea
+        </p>
 
     </div>
 
@@ -192,9 +200,7 @@
                 const cfgRes = await fetch('/api/config/visual');
                 const cfg = await cfgRes.json();
                 if (cfg.firma_url) {
-                    const img = document.getElementById('imgFirma');
-                    img.src = cfg.firma_url;
-                    img.style.display = 'block';
+                    setupFirma(cfg.firma_url);
                 }
             } catch(e) {}
 
@@ -246,6 +252,57 @@
                 console.error(err);
                 alert("Fallo de comunicación con el servidor");
             }
+        }
+
+        function makeDraggable(el) {
+            let startX, startY, origLeft, origTop;
+
+            function onDown(e) {
+                e.preventDefault();
+                const touch = e.touches ? e.touches[0] : e;
+                startX = touch.clientX;
+                startY = touch.clientY;
+                origLeft = parseInt(el.style.left) || 0;
+                origTop  = parseInt(el.style.top)  || 0;
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup',   onUp);
+                document.addEventListener('touchmove', onMove, { passive: false });
+                document.addEventListener('touchend',  onUp);
+            }
+            function onMove(e) {
+                e.preventDefault();
+                const touch = e.touches ? e.touches[0] : e;
+                el.style.left = (origLeft + touch.clientX - startX) + 'px';
+                el.style.top  = (origTop  + touch.clientY - startY) + 'px';
+            }
+            function onUp() {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup',   onUp);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend',  onUp);
+            }
+            el.addEventListener('mousedown',  onDown);
+            el.addEventListener('touchstart', onDown, { passive: false });
+        }
+
+        function setupFirma(url) {
+            const img = document.getElementById('imgFirma');
+            img.onerror = () => { img.style.display = 'none'; };
+            img.onload = () => {
+                // Posicionar sobre la línea de firma
+                const container = document.querySelector('.print-container');
+                const sigLine   = document.querySelector('.signature-line');
+                const cRect = container.getBoundingClientRect();
+                const sRect = sigLine.getBoundingClientRect();
+                const relTop  = sRect.top  - cRect.top  - img.offsetHeight - 8;
+                const relLeft = sRect.left - cRect.left + (sRect.width - img.offsetWidth) / 2;
+                img.style.top  = Math.max(0, relTop)  + 'px';
+                img.style.left = Math.max(0, relLeft) + 'px';
+                img.style.display = 'block';
+                document.getElementById('firmaHint').style.display = 'block';
+                makeDraggable(img);
+            };
+            img.src = url;
         }
 
         async function uploadFirma(file) {
