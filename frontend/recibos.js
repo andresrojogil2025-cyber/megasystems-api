@@ -183,6 +183,60 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('btnGenerarRecibo').addEventListener('click', sendRecibo);
 
+    // ======== HISTORIAL DE RECIBOS ========
+    let allRecibos = [];
+
+    async function loadHistorial() {
+        try {
+            const res = await fetch(`${API_URL}/recibos`);
+            const data = await res.json();
+            if (data.success) {
+                allRecibos = data.data;
+                renderHistorial(allRecibos);
+            }
+        } catch(e) {
+            document.getElementById('historialBody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">Error cargando historial.</td></tr>';
+        }
+    }
+
+    function renderHistorial(lista) {
+        const tbody = document.getElementById('historialBody');
+        if (!lista.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--color-text-muted);">No hay recibos registrados.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = lista.map(r => {
+            const fechaStr = (r.fecha || '').split('T')[0];
+            const [fy, fm, fd] = fechaStr.split('-');
+            const fecha = `${fd}/${fm}/${fy}`;
+            const montoUsd = parseFloat(r.monto_usd || 0);
+            const montoVes = parseFloat(r.monto_ves || 0);
+            return `<tr style="border-bottom:1px solid #f3f4f6;">
+                <td style="padding:10px 12px; font-weight:600; color:var(--color-primary);">${r.nro_recibo}</td>
+                <td style="padding:10px 12px;">${fecha}</td>
+                <td style="padding:10px 12px;">${r.cliente_nombre || '-'}</td>
+                <td style="padding:10px 12px; color:var(--color-text-muted); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.concepto || '-'}</td>
+                <td style="padding:10px 12px; text-align:right; font-weight:600;">$${formatVez(montoUsd)}</td>
+                <td style="padding:10px 12px; text-align:right; color:#059669; font-weight:600;">Bs.${formatVez(montoVes)}</td>
+                <td style="padding:10px 12px; text-align:center;">
+                    <a href="print_recibo.html?id=${r.id}" target="_blank" style="background:var(--color-primary); color:white; padding:5px 12px; border-radius:4px; text-decoration:none; font-size:0.8rem; font-weight:600;">Ver / Imprimir</a>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    document.getElementById('searchHistorial').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        if (!q) { renderHistorial(allRecibos); return; }
+        renderHistorial(allRecibos.filter(r =>
+            (r.nro_recibo || '').toLowerCase().includes(q) ||
+            (r.cliente_nombre || '').toLowerCase().includes(q) ||
+            (r.concepto || '').toLowerCase().includes(q)
+        ));
+    });
+
+    await loadHistorial();
+
     // ======== CREACIÓN RÁPIDA DE CLIENTE DESDE MODAL ========
     const formNuevoCliente = document.getElementById('formNuevoCliente');
     if (formNuevoCliente) {

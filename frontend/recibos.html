@@ -164,6 +164,32 @@
         </div>
     </div>
 
+    <!-- HISTORIAL DE RECIBOS -->
+    <div class="panel" style="margin-top: 25px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0; border:none; padding:0;">Historial de Recibos</h3>
+            <input type="text" id="searchHistorial" placeholder="Buscar por Nro o cliente..." style="padding:8px 12px; border:1px solid #d1d5db; border-radius:4px; outline:none; width:260px; font-family:inherit;">
+        </div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                <thead>
+                    <tr style="background:var(--color-bg-light);">
+                        <th style="padding:10px 12px; text-align:left; font-weight:600; color:var(--color-text-muted);">Nro</th>
+                        <th style="padding:10px 12px; text-align:left; font-weight:600; color:var(--color-text-muted);">Fecha</th>
+                        <th style="padding:10px 12px; text-align:left; font-weight:600; color:var(--color-text-muted);">Cliente</th>
+                        <th style="padding:10px 12px; text-align:left; font-weight:600; color:var(--color-text-muted);">Concepto</th>
+                        <th style="padding:10px 12px; text-align:right; font-weight:600; color:var(--color-text-muted);">Monto USD</th>
+                        <th style="padding:10px 12px; text-align:right; font-weight:600; color:var(--color-text-muted);">Monto Bs.</th>
+                        <th style="padding:10px 12px; text-align:center; font-weight:600; color:var(--color-text-muted);">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="historialBody">
+                    <tr><td colspan="7" style="text-align:center; padding:20px; color:var(--color-text-muted);">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Modal Nuevo Cliente -->
     <div id="modalNuevoCliente" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; justify-content:center; align-items:center;">
         <div style="background:var(--color-surface); padding:25px; border-radius:var(--border-radius-lg); width:450px; max-width:90%; position:relative; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
