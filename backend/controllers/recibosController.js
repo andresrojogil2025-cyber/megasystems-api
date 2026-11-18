@@ -4,7 +4,7 @@ const recibosController = {
     // 1. Crear Recibo de Pago (cobro recibido, sin ligarlo necesariamente a una cuenta por cobrar)
     create: async (req, res) => {
         try {
-            const { client_id, monto, moneda, tasa_bcv_hoy, metodo_pago, concepto, observaciones, fecha_documento } = req.body;
+            const { client_id, monto, moneda, tasa_bcv_hoy, metodo_pago, concepto, observaciones, modo_moneda, fecha_documento } = req.body;
 
             if (!client_id) return res.status(400).json({ error: 'Debe seleccionar un cliente.' });
 
@@ -25,8 +25,8 @@ const recibosController = {
             const newNro = `REC-${(countRow[0].count + 1).toString().padStart(5, '0')}`;
 
             const info = await db.runAsync(
-                'INSERT INTO recibos_pago (cliente_id, fecha, nro_recibo, monto_usd, tasa_bcv, monto_ves, metodo_pago, concepto, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [client_id, fecha_documento || new Date().toISOString(), newNro, monto_usd, tasa_bcv_final, monto_ves, metodo_pago || 'efectivo', concepto || null, observaciones || null]
+                'INSERT INTO recibos_pago (cliente_id, fecha, nro_recibo, monto_usd, tasa_bcv, monto_ves, metodo_pago, concepto, observaciones, modo_moneda) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [client_id, fecha_documento || new Date().toISOString(), newNro, monto_usd, tasa_bcv_final, monto_ves, metodo_pago || 'efectivo', concepto || null, observaciones || null, modo_moneda || 'ambas']
             );
 
             res.json({

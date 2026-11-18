@@ -101,6 +101,8 @@
 
         <div class="action-buttons no-print">
             <a href="recibos.html" class="btn-back">⬅️ Volver a Recibos</a>
+            <input type="file" id="inputFirma" accept="image/*" style="display:none" onchange="uploadFirma(this.files[0])">
+            <button class="btn-back" onclick="document.getElementById('inputFirma').click()" style="margin-right:10px; cursor:pointer;">Configurar Firma</button>
             <button class="btn" onclick="window.print()">🖨️ Imprimir / PDF</button>
         </div>
 
@@ -153,13 +155,13 @@
                 <span>Método de Pago:</span>
                 <strong id="lblMetodo">-</strong>
             </div>
-            <div class="totals-row grand-total-row">
+            <div class="totals-row grand-total-row" id="rowUsd">
                 <span>MONTO RECIBIDO (USD):</span>
                 <strong>$<span id="lblMontoUsd">0.00</span></strong>
             </div>
-            <div class="totals-row" style="background:#dcfce7;">
-                <span style="color:#166534; font-weight:700;">EQUIVALENTE EN BOLÍVARES:</span>
-                <strong style="color:#166534; font-size:1.1rem;">Bs. <span id="lblMontoVes">0.00</span></strong>
+            <div class="totals-row" id="rowVes" style="background:#dcfce7;">
+                <span id="lblVesLabel" style="color:#166534; font-weight:700;">MONTO EN BOLÍVARES:</span>
+                <strong id="lblVesStrong" style="color:#166534; font-size:1.1rem;">Bs. <span id="lblMontoVes">0.00</span></strong>
             </div>
         </div>
 
@@ -168,6 +170,7 @@
         <!-- FIRMA -->
         <div class="signatures-section">
             <div class="signature-box">
+                <img id="imgFirma" src="" alt="Firma" style="max-height:60px; max-width:200px; display:none; margin-bottom:5px; object-fit:contain;">
                 <div class="signature-line"></div>
                 <div class="signature-label">Recibido por</div>
             </div>
@@ -182,11 +185,18 @@
         async function loadRecibo() {
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
+            if (!id) { alert("ID de recibo no proporcionado."); return; }
 
-            if (!id) {
-                alert("ID de recibo no proporcionado.");
-                return;
-            }
+            // Cargar firma desde configuración
+            try {
+                const cfgRes = await fetch('/api/config/visual');
+                const cfg = await cfgRes.json();
+                if (cfg.firma_url) {
+                    const img = document.getElementById('imgFirma');
+                    img.src = cfg.firma_url;
+                    img.style.display = 'block';
+                }
+            } catch(e) {}
 
             try {
                 const res = await fetch(`${API_URL}/recibos/${id}`);
@@ -197,12 +207,15 @@
                     const c = r.cliente;
 
                     document.getElementById('lblNro').innerText = r.nro_recibo;
-                    document.getElementById('lblFecha').innerText = new Date(r.fecha).toLocaleDateString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+                    // Fix: parsear fecha sin desfase de zona horaria
+                    const fechaStr = (r.fecha || '').split('T')[0];
+                    const [fy, fm, fd] = fechaStr.split('-');
+                    document.getElementById('lblFecha').innerText = `${fd}/${fm}/${fy}`;
 
                     document.getElementById('lblClientName').innerText = c.nombre_razon;
                     document.getElementById('lblClientRif').innerText = c.rif;
                     document.getElementById('lblClientTlf').innerText = c.telefono || 'N/A';
-
                     document.getElementById('lblConcepto').innerText = r.concepto || 'Sin especificar.';
 
                     const metodosLabels = { efectivo: 'Efectivo', transferencia: 'Transferencia Bancaria', pago_movil: 'Pago Móvil', zelle: 'Zelle', binance: 'Binance / Cripto', otro: 'Otro' };
@@ -210,8 +223,21 @@
 
                     document.getElementById('lblMontoUsd').innerText = formatVez(parseFloat(r.monto_usd));
                     document.getElementById('lblMontoVes').innerText = formatVez(parseFloat(r.monto_ves) || 0);
-
                     document.getElementById('lblObservaciones').innerText = r.observaciones || '';
+
+                    // Modo de moneda: ambas / usd / ves
+                    const modo = r.modo_moneda || 'ambas';
+                    if (modo === 'usd') {
+                        document.getElementById('rowVes').style.display = 'none';
+                    } else if (modo === 'ves') {
+                        document.getElementById('rowUsd').style.display = 'none';
+                        const rowVes = document.getElementById('rowVes');
+                        rowVes.className = 'totals-row grand-total-row';
+                        rowVes.style.background = '';
+                        document.getElementById('lblVesLabel').style.cssText = '';
+                        document.getElementById('lblVesLabel').innerText = 'MONTO RECIBIDO (Bs.):';
+                        document.getElementById('lblVesStrong').style.cssText = '';
+                    }
 
                 } else {
                     alert("Error cargando el recibo");
@@ -220,6 +246,32 @@
                 console.error(err);
                 alert("Fallo de comunicación con el servidor");
             }
+        }
+
+        async function uploadFirma(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const uploadRes = await fetch('/api/config/upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fileName: `firma_oficial.${ext}`, base64: e.target.result })
+                    });
+                    const uploadData = await uploadRes.json();
+                    if (uploadData.success) {
+                        await fetch('/api/config/firma', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ firma_url: uploadData.url })
+                        });
+                        alert('Firma guardada. Se aplicará en todos los recibos.');
+                        location.reload();
+                    }
+                } catch(e) { alert('Error al subir la firma'); }
+            };
+            reader.readAsDataURL(file);
         }
 
         window.onload = loadRecibo;

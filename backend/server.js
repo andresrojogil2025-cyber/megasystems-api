@@ -49,6 +49,7 @@ const comprasController = require('./controllers/comprasController');
 app.get('/api/config/visual', authController.getVisualConfig);
 app.post('/api/config/visual', authController.updateVisualConfig);
 app.post('/api/config/upload', authController.uploadImage);
+app.post('/api/config/firma', authController.updateFirma);
 app.post('/api/auth/login', authController.login);
 app.get('/api/auth/seed', authController.seedAdmin);
 app.get('/api/bcv/rate', bcvController.getBcvRate);

@@ -147,6 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 metodo_pago: document.getElementById('metodoPago').value,
                 concepto: document.getElementById('concepto').value,
                 observaciones: document.getElementById('observaciones').value,
+                modo_moneda: document.getElementById('modoMoneda').value,
                 fecha_documento: reciboDateInput.value
             };
 
@@ -170,6 +171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('metodoPago').value = 'efectivo';
                 document.getElementById('concepto').value = '';
                 document.getElementById('observaciones').value = '';
+                document.getElementById('modoMoneda').value = 'ambas';
                 calculateResumen();
             } else {
                 alert(data.error || 'Ocurrió un error guardando el recibo en base de datos.');

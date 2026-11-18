@@ -125,9 +125,18 @@
                     <input type="text" id="concepto" placeholder="Ej: Abono por servicio de mantenimiento de red WiFi">
                 </div>
 
-                <div class="field-group" style="margin-bottom:0;">
+                <div class="field-group">
                     <label>Observaciones (Opcional)</label>
                     <textarea id="observaciones" placeholder="Notas adicionales..."></textarea>
+                </div>
+
+                <div class="field-group" style="margin-bottom:0;">
+                    <label>Mostrar en el recibo</label>
+                    <select id="modoMoneda">
+                        <option value="ambas">Ambas monedas (USD + Bs.)</option>
+                        <option value="usd">Solo Dólares (USD)</option>
+                        <option value="ves">Solo Bolívares (Bs.)</option>
+                    </select>
                 </div>
             </div>
         </div>

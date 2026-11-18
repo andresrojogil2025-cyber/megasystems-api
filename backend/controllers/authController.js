@@ -50,7 +50,7 @@ const authController = {
     // 2. Obtener imágenes dinámicas para el Login
     getVisualConfig: async (req, res) => {
         try {
-            const config = await db.queryAsync('SELECT fondo_login_url, logo_url, banner_url FROM configuracion_visual ORDER BY id DESC LIMIT 1');
+            const config = await db.queryAsync('SELECT fondo_login_url, logo_url, banner_url, firma_url FROM configuracion_visual ORDER BY id DESC LIMIT 1');
             
             if (config && config.length > 0) {
                 res.json(config[0]);
@@ -110,7 +110,22 @@ const authController = {
         }
     },
 
-    // 4. Crear usuario (Utilidad interna / Seed)
+    // 4. Guardar URL de firma en configuración visual
+    updateFirma: async (req, res) => {
+        try {
+            const { firma_url } = req.body;
+            await db.runAsync(
+                'UPDATE configuracion_visual SET firma_url = ? WHERE id = (SELECT id FROM configuracion_visual ORDER BY id DESC LIMIT 1)',
+                [firma_url]
+            );
+            res.json({ success: true });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Error guardando firma' });
+        }
+    },
+
+    // 5. Crear usuario (Utilidad interna / Seed)
     seedAdmin: async (req, res) => {
         try {
             const hashed = hashPassword('admin123');
