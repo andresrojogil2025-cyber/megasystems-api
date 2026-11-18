@@ -218,8 +218,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td style="padding:10px 12px; color:var(--color-text-muted); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.concepto || '-'}</td>
                 <td style="padding:10px 12px; text-align:right; font-weight:600;">$${formatVez(montoUsd)}</td>
                 <td style="padding:10px 12px; text-align:right; color:#059669; font-weight:600;">Bs.${formatVez(montoVes)}</td>
-                <td style="padding:10px 12px; text-align:center;">
-                    <a href="print_recibo.html?id=${r.id}" target="_blank" style="background:var(--color-primary); color:white; padding:5px 12px; border-radius:4px; text-decoration:none; font-size:0.8rem; font-weight:600;">Ver / Imprimir</a>
+                <td style="padding:10px 12px; text-align:center; white-space:nowrap;">
+                    <a href="print_recibo.html?id=${r.id}" target="_blank" style="background:var(--color-primary); color:white; padding:5px 10px; border-radius:4px; text-decoration:none; font-size:0.8rem; font-weight:600; margin-right:5px;">Ver</a>
+                    <button onclick="openEditReciboById(${r.id})" style="background:#f59e0b; color:white; padding:5px 10px; border-radius:4px; border:none; font-size:0.8rem; font-weight:600; cursor:pointer;">Editar</button>
                 </td>
             </tr>`;
         }).join('');
@@ -234,6 +235,50 @@ document.addEventListener('DOMContentLoaded', async () => {
             (r.concepto || '').toLowerCase().includes(q)
         ));
     });
+
+    window.openEditReciboById = (id) => {
+        const r = allRecibos.find(x => x.id == id);
+        if (!r) return;
+        document.getElementById('editReciboId').value = r.id;
+        document.getElementById('editReciboNro').innerText = r.nro_recibo;
+        document.getElementById('editReciboFecha').value = (r.fecha || '').split('T')[0];
+        document.getElementById('editReciboMonto').value = parseFloat(r.monto_usd || 0).toFixed(2);
+        document.getElementById('editReciboMoneda').value = 'USD';
+        document.getElementById('editReciboMetodo').value = r.metodo_pago || 'efectivo';
+        document.getElementById('editReciboConcepto').value = r.concepto || '';
+        document.getElementById('editReciboObservaciones').value = r.observaciones || '';
+        document.getElementById('editReciboModoMoneda').value = r.modo_moneda || 'ambas';
+        document.getElementById('modalEditarRecibo').style.display = 'flex';
+    };
+
+    window.saveEditRecibo = async () => {
+        const id = document.getElementById('editReciboId').value;
+        const payload = {
+            monto: parseFloat(document.getElementById('editReciboMonto').value) || 0,
+            moneda: document.getElementById('editReciboMoneda').value,
+            metodo_pago: document.getElementById('editReciboMetodo').value,
+            concepto: document.getElementById('editReciboConcepto').value,
+            observaciones: document.getElementById('editReciboObservaciones').value,
+            modo_moneda: document.getElementById('editReciboModoMoneda').value,
+            fecha_documento: document.getElementById('editReciboFecha').value
+        };
+        try {
+            const res = await fetch(`${API_URL}/recibos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('modalEditarRecibo').style.display = 'none';
+                await loadHistorial();
+            } else {
+                alert(data.error || 'Error actualizando el recibo');
+            }
+        } catch(e) {
+            alert('Error de conexión');
+        }
+    };
 
     await loadHistorial();
 

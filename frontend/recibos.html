@@ -190,6 +190,59 @@
         </div>
     </div>
 
+    <!-- Modal Editar Recibo -->
+    <div id="modalEditarRecibo" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; justify-content:center; align-items:center;">
+        <div style="background:var(--color-surface); padding:25px; border-radius:var(--border-radius-lg); width:500px; max-width:90%; box-shadow:0 10px 25px rgba(0,0,0,0.2); max-height:90vh; overflow-y:auto;">
+            <h3 style="margin-bottom:15px; color:var(--color-text-main); border-bottom:1px solid #e5e7eb; padding-bottom:10px;">Editar Recibo <span id="editReciboNro" style="color:var(--color-primary);"></span></h3>
+            <input type="hidden" id="editReciboId">
+            <div class="field-group">
+                <label>Fecha</label>
+                <input type="date" id="editReciboFecha" style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:4px; outline:none; font-family:inherit; box-sizing:border-box;">
+            </div>
+            <div class="field-group">
+                <label>Monto Recibido</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="editReciboMonto" min="0" step="0.01" placeholder="0.00" style="flex:1; padding:10px; border:1px solid #d1d5db; border-radius:4px; outline:none;">
+                    <select id="editReciboMoneda" style="width:120px; padding:10px; border:1px solid #d1d5db; border-radius:4px; outline:none;">
+                        <option value="USD">USD</option>
+                        <option value="VES">VES</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field-group">
+                <label>Método de Pago</label>
+                <select id="editReciboMetodo" style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:4px; outline:none; font-family:inherit;">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="transferencia">Transferencia Bancaria</option>
+                    <option value="pago_movil">Pago Móvil</option>
+                    <option value="zelle">Zelle</option>
+                    <option value="binance">Binance / Cripto</option>
+                    <option value="otro">Otro</option>
+                </select>
+            </div>
+            <div class="field-group">
+                <label>Concepto</label>
+                <input type="text" id="editReciboConcepto" style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:4px; outline:none; box-sizing:border-box;">
+            </div>
+            <div class="field-group">
+                <label>Observaciones</label>
+                <textarea id="editReciboObservaciones" style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:4px; outline:none; font-family:inherit; min-height:70px; box-sizing:border-box; resize:vertical;"></textarea>
+            </div>
+            <div class="field-group" style="margin-bottom:20px;">
+                <label>Mostrar en el recibo</label>
+                <select id="editReciboModoMoneda" style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:4px; outline:none; font-family:inherit;">
+                    <option value="ambas">Ambas monedas (USD + Bs.)</option>
+                    <option value="usd">Solo Dólares (USD)</option>
+                    <option value="ves">Solo Bolívares (Bs.)</option>
+                </select>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" onclick="document.getElementById('modalEditarRecibo').style.display='none'" style="padding:10px 15px; border:1px solid #d1d5db; background:white; border-radius:4px; cursor:pointer;">Cancelar</button>
+                <button type="button" onclick="saveEditRecibo()" style="padding:10px 15px; border:none; background:var(--color-primary); color:white; border-radius:4px; font-weight:600; cursor:pointer;">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Nuevo Cliente -->
     <div id="modalNuevoCliente" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; justify-content:center; align-items:center;">
         <div style="background:var(--color-surface); padding:25px; border-radius:var(--border-radius-lg); width:450px; max-width:90%; position:relative; box-shadow:0 10px 25px rgba(0,0,0,0.2);">

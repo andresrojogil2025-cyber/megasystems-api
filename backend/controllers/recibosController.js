@@ -57,7 +57,33 @@ const recibosController = {
         }
     },
 
-    // 3. Detalle de un recibo de pago
+    // 3. Actualizar recibo de pago
+    update: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { monto, moneda, metodo_pago, concepto, observaciones, modo_moneda, fecha_documento } = req.body;
+
+            const existing = await db.queryAsync('SELECT * FROM recibos_pago WHERE id = ?', [id]);
+            if (!existing.length) return res.status(404).json({ error: 'Recibo no encontrado' });
+
+            const tasa = parseFloat(existing[0].tasa_bcv) || 0;
+            const montoIngresado = parseFloat(monto) || 0;
+            const monto_usd = moneda === 'VES' ? (tasa > 0 ? montoIngresado / tasa : 0) : montoIngresado;
+            const monto_ves = tasa > 0 ? Math.round(monto_usd * tasa * 100) / 100 : null;
+
+            await db.runAsync(
+                'UPDATE recibos_pago SET fecha = ?, monto_usd = ?, monto_ves = ?, metodo_pago = ?, concepto = ?, observaciones = ?, modo_moneda = ? WHERE id = ?',
+                [fecha_documento, monto_usd, monto_ves, metodo_pago || 'efectivo', concepto || null, observaciones || null, modo_moneda || 'ambas', id]
+            );
+
+            res.json({ success: true, message: 'Recibo actualizado.' });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Error al actualizar el recibo' });
+        }
+    },
+
+    // 4. Detalle de un recibo de pago
     getDetails: async (req, res) => {
         try {
             const { id } = req.params;

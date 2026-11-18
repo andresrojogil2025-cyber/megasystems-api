@@ -91,6 +91,7 @@ app.post('/api/notas-entrega', notaEntregaController.create);
 app.get('/api/recibos', recibosController.getAll);
 app.get('/api/recibos/:id', recibosController.getDetails);
 app.post('/api/recibos', recibosController.create);
+app.put('/api/recibos/:id', recibosController.update);
 
 // Rutas de Proveedores y Compras
 app.get('/api/proveedores', proveedoresController.getAll);
